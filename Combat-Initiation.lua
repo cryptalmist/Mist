@@ -20,7 +20,7 @@ local CharacterTab = Window:MakeTab({
 local OPSwords = false -- Variable to track the toggle state for swords
 local OPGuns = false -- Variable to track the toggle state for guns
 local OPSlingshot = false -- Variable to track the toggle state for slingshots
-local InfiniteStamina = false -- Variable to track the toggle state for infinite stamina
+local InfiniteDash = false -- Variable to track the toggle state for infinite dash
 
 -- Function to modify tool attributes safely (check both Backpack and equipped tools)
 local function modifyToolAttributes(toolName, attributes)
@@ -166,18 +166,20 @@ Tab:AddToggle({
 })
 
 -- Character Tab
-CharacterTab:AddParagraph("Character Attributes", "Enable infinite stamina.")
+CharacterTab:AddParagraph("Character Attributes", "Enable infinite dash.")
 CharacterTab:AddToggle({
-    Name = "Infinite Stamina",
+    Name = "Infinite Dash",
     Default = false,
     Callback = function(Value)
-        InfiniteStamina = Value
+        InfiniteDash = Value
         local character = game.Players.LocalPlayer.Character
         if character then
-            if InfiniteStamina then
-                character:SetAttribute("Stamina", math.huge) -- Set stamina to infinite
+            if InfiniteDash then
+                character:SetAttribute("DashRegenTime", 0.05) -- Set dash regeneration time to a low value
+                character:SetAttribute("DashRegenFury", 0.05) -- Set dash fury regeneration to a low value
             else
-                character:SetAttribute("Stamina", 100) -- Reset to normal value (assuming 100 is the max)
+                character:SetAttribute("DashRegenTime", 1) -- Reset to normal value
+                character:SetAttribute("DashRegenFury", 1) -- Reset to normal value
             end
         end
     end
