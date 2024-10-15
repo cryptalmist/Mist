@@ -1,7 +1,7 @@
 local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
 
 local Window = OrionLib:MakeWindow({
-    Name = "CryptHub-Combat Initiation",
+    Name = "CryptHub - Combat-Initiation",
     SaveConfig = true,
     ConfigFolder = "CryptHub",
     IntroText = "Hi!"
