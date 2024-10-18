@@ -90,6 +90,7 @@ local function OnEquipped(Item)
             modifyToolAttributes(itemName, {
                 Capacity = 10000,
                 ChargeRate = 0,
+                PelletTossRate=0,
                 Firerate = 0,
                 Spread = 0,
                 ProjectileSpeed = 2250
