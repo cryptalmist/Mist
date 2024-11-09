@@ -2,6 +2,7 @@ local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shle
 
 local Window = OrionLib:MakeWindow({
     Name = "CryptHub - Combat-Initiation",
+    HidePremium = false,
     SaveConfig = true,
     ConfigFolder = "CryptHub",
     IntroText = "Hi!"
@@ -17,12 +18,8 @@ local CharacterTab = Window:MakeTab({
     Icon = "rbxassetid://4483345998"
 })
 
-local OPSwords = false -- Variable to track the toggle state for swords
-local OPGuns = false -- Variable to track the toggle state for guns
-local OPSlingshot = false -- Variable to track the toggle state for slingshots
-local InfiniteDash = false -- Variable to track the toggle state for infinite dash
+local debounce = false -- Add a debounce to prevent freezing
 
--- Function to modify tool attributes safely (check both Backpack and equipped tools)
 local function modifyToolAttributes(toolName, attributes)
     local player = game.Players.LocalPlayer
     local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
@@ -34,11 +31,12 @@ local function modifyToolAttributes(toolName, attributes)
     end
 end
 
--- Function to handle item equipping
 local function OnEquipped(Item)
+    if debounce then return end
+    debounce = true
+
     local itemName = Item.Name
 
-    -- Check for swords
     if OPSwords and (itemName == "Sword" or itemName == "Firebrand" or itemName == "Katana") then
         if itemName == "Sword" then
             modifyToolAttributes(itemName, {
@@ -51,7 +49,7 @@ local function OnEquipped(Item)
                 LungeRate = 0,
                 Swingrate = 0,
                 OffhandSwingRate = 0,
-                Windup = 0 -- Assuming Firebrand has a Windup attribute
+                Windup = 0
             })
         elseif itemName == "Katana" then
             modifyToolAttributes(itemName, {
@@ -61,8 +59,7 @@ local function OnEquipped(Item)
             })
         end
     end
-    
-    -- Check for guns
+
     if OPGuns and (itemName == "Paintball Gun" or itemName == "BB Gun" or itemName == "Freeze Ray") then
         if itemName == "Paintball Gun" then
             modifyToolAttributes(itemName, {
@@ -73,7 +70,7 @@ local function OnEquipped(Item)
             modifyToolAttributes(itemName, {
                 Firerate = 0,
                 MinShots = 2,
-                MaxShots = math.huge -- Use `math.huge` for infinite value
+                MaxShots = math.huge
             })
         elseif itemName == "Freeze Ray" then
             modifyToolAttributes(itemName, {
@@ -83,8 +80,7 @@ local function OnEquipped(Item)
             })
         end
     end
-    
-    -- Check for slingshots
+
     if OPSlingshot and (itemName == "Slingshot" or itemName == "Flamethrower") then
         if itemName == "Slingshot" then
             modifyToolAttributes(itemName, {
@@ -101,31 +97,29 @@ local function OnEquipped(Item)
             })
         end
     end
+
+    debounce = false -- Reset debounce after modification
 end
 
--- Function to set up event listeners for equipping tools
 local function setupToolListeners()
     local player = game.Players.LocalPlayer
 
-    -- Listen for when a tool is added to the character
     player.Character.ChildAdded:Connect(function(child)
         if child:IsA("Tool") then
             child.Equipped:Connect(function()
-                OnEquipped(child) -- Call OnEquipped when the tool is equipped
+                OnEquipped(child)
             end)
         end
     end)
 
-    -- Listen for when a tool is added to the Backpack
     player.Backpack.ChildAdded:Connect(function(child)
         if child:IsA("Tool") then
             child.Equipped:Connect(function()
-                OnEquipped(child) -- Call OnEquipped when the tool is equipped
+                OnEquipped(child)
             end)
         end
     end)
 
-    -- Check equipped tools on spawn
     for _, child in ipairs(player.Character:GetChildren()) do
         if child:IsA("Tool") then
             OnEquipped(child)
@@ -133,7 +127,6 @@ local function setupToolListeners()
     end
 end
 
--- Tools Tab
 local Tab = Tool
 
 Tab:AddParagraph("Sword Mod", "Enable to modify sword attributes.")
@@ -166,7 +159,6 @@ Tab:AddToggle({
     end    
 })
 
--- Character Tab
 CharacterTab:AddParagraph("Character Attributes", "Enable infinite dash.")
 CharacterTab:AddToggle({
     Name = "Infinite Dash",
@@ -174,22 +166,28 @@ CharacterTab:AddToggle({
     Callback = function(Value)
         InfiniteDash = Value
         local character = game.Players.LocalPlayer.Character
-        if character then
-            if InfiniteDash then
-                character:SetAttribute("DashRegenTime", 0.05) -- Set dash regeneration time to a low value
-                character:SetAttribute("DashRegenFury", 0.05) -- Set dash fury regeneration to a low value
-            else
-                character:SetAttribute("DashRegenTime", 1) -- Reset to normal value
-                character:SetAttribute("DashRegenFury", 1) -- Reset to normal value
+        -- Start the infinite dash loop
+        spawn(function()
+            while InfiniteDash do
+                -- Ensure the character is loaded and modify dash attributes
+                if character then
+                    character:SetAttribute("DashRegenTime", 0.05)
+                    character:SetAttribute("DashRegenFury", 0.05)
+                end
+                wait(2) -- Wait 2 seconds before resetting attributes
             end
-        end
+            -- Reset attributes when Infinite Dash is toggled off
+            if character then
+                character:SetAttribute("DashRegenTime", 1)
+                character:SetAttribute("DashRegenFury", 1)
+            end
+        end)
     end
 })
 
--- Connect to the Player's CharacterAdded event to re-establish listeners on respawn
 game.Players.LocalPlayer.CharacterAdded:Connect(function()
-    wait() -- Wait for the character to load
-    setupToolListeners() -- Re-setup listeners for tools
+    wait()
+    setupToolListeners()
 end)
 
 OrionLib:Init()
