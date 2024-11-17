@@ -1,21 +1,24 @@
+print(game.GameId)
 if game.GameId == 4712126054 then
-    local function editAccessoryAttributes(attributeList)
-        -- Reference to the AccessoryEffects folder
-        local accessoryFolder = player:FindFirstChild("AccessoryEffects")
-        
-        if accessoryFolder then
-            -- Iterate through the list and set or update attributes
-            for attributeName, attributeValue in pairs(attributeList) do
-                accessoryFolder:SetAttribute(attributeName, attributeValue)
-            end
 
-            print("Attributes updated for AccessoryEffects folder.")
-        else
-            print("AccessoryEffects folder not found.")
-        end
-    end
-    editAccessoryAttributes(attributesToSet)
     if placeId == 14582748896 then
+        print("In Game")
+        local function editAccessoryAttributes(attributeList)
+            -- Reference to the AccessoryEffects folder
+            local accessoryFolder = player:FindFirstChild("AccessoryEffects")
+            
+            if accessoryFolder then
+                -- Iterate through the list and set or update attributes
+                for attributeName, attributeValue in pairs(attributeList) do
+                    accessoryFolder:SetAttribute(attributeName, attributeValue)
+                end
+
+                print("Attributes updated for AccessoryEffects folder.")
+            else
+                print("AccessoryEffects folder not found.")
+            end
+        end
+        editAccessoryAttributes(attributesToSet)
 
         print("Waiting for game to start...")
         local function waitForItemInBackpack()
@@ -178,3 +181,4 @@ if game.GameId == 4712126054 then
     end)
 
     Rayfield:LoadConfiguration() -- Load saved configurations on launch
+end
