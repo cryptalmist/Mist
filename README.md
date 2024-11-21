@@ -1,3 +1,14 @@
+combat initiation:
+```lua
+--idk if this work
+local attributesToSet = {
+    Lifesteal = 1,
+    Lightning_Chance = 1,
+    Melee_Range = 10,
+    Pogo_Range = 2
+}
+loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/CryptHub/refs/heads/main/Combat-Initiation.lua"))()
+```
 buff script:
 ```lua
 local player = game.Players.LocalPlayer
