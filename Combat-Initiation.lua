@@ -1,4 +1,4 @@
-print(game.GameId)
+local player = game.Players.LocalPlayer
 if game.GameId == 4712126054 then
 
     if placeId == 14582748896 then
@@ -22,7 +22,6 @@ if game.GameId == 4712126054 then
 
         print("Waiting for game to start...")
         local function waitForItemInBackpack()
-            local player = game.Players.LocalPlayer
             local backpack = player:WaitForChild("Backpack") -- Ensure the Backpack exists
 
             -- Wait until the backpack contains at least one item
@@ -52,7 +51,6 @@ if game.GameId == 4712126054 then
 
     -- Function to modify tool attributes
     local function modifyToolAttributes(toolName, attributes)
-        local player = game.Players.LocalPlayer
         local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
 
         if tool then
@@ -87,7 +85,7 @@ if game.GameId == 4712126054 then
         
         -- Check for slingshots
         if OPSlingshot and (itemName == "Slingshot" or itemName == "Flamethrower") then
-            modifyToolAttributes(itemName, { Capacity = 10000, ChargeRate = 0, Firerate = 0, Spread = 0, ProjectileSpeed = 2250 })
+            modifyToolAttributes(itemName, { Capacity = 1000, ChargeRate = 0, Firerate = 0, ProjectileSpeed = 2250, PelletTossRate = 0 })
             if itemName == "Flamethrower" then
                 modifyToolAttributes(itemName, { Cooldown = 0, Intake = 0 })
             end
@@ -96,7 +94,7 @@ if game.GameId == 4712126054 then
 
     -- Function to set up event listeners for equipping tools
     local function setupToolListeners()
-        local player = game.Players.LocalPlayer
+        
 
         player.Character.ChildAdded:Connect(function(child)
             if child:IsA("Tool") then
@@ -124,7 +122,7 @@ if game.GameId == 4712126054 then
 
     -- Tool Mod Toggles
     ToolTab:CreateToggle({
-        Name = "OP Swords",
+        Name = "OP Swords Tree",
         CurrentValue = false,
         Flag = "OP_Swords",
         Callback = function(Value)
@@ -133,7 +131,7 @@ if game.GameId == 4712126054 then
     })
 
     ToolTab:CreateToggle({
-        Name = "OP Guns",
+        Name = "OP Guns Tree",
         CurrentValue = false,
         Flag = "OP_Guns",
         Callback = function(Value)
@@ -142,7 +140,7 @@ if game.GameId == 4712126054 then
     })
 
     ToolTab:CreateToggle({
-        Name = "OP Slingshots",
+        Name = "OP Slingshots Tree",
         CurrentValue = false,
         Flag = "OP_Slingshot",
         Callback = function(Value)
