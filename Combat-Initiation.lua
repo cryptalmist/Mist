@@ -4,22 +4,23 @@ if game.GameId == 4712126054 then
 
     if placeId == 14582748896 then
         print("In Game")
-        local function editAccessoryAttributes(attributeList)
-            -- Reference to the AccessoryEffects folder
-            local accessoryFolder = player:FindFirstChild("AccessoryEffects")
-            
-            if accessoryFolder then
-                -- Iterate through the list and set or update attributes
-                for attributeName, attributeValue in pairs(attributeList) do
-                    accessoryFolder:SetAttribute(attributeName, attributeValue)
+        if attributesToSet then
+            local function editAccessoryAttributes(attributeList)
+                -- Reference to the AccessoryEffects folder
+                local accessoryFolder = player:FindFirstChild("AccessoryEffects")
+                
+                if accessoryFolder then
+                    -- Iterate through the list and set or update attributes
+                    for attributeName, attributeValue in pairs(attributeList) do
+                        accessoryFolder:SetAttribute(attributeName, attributeValue)
+                    end
+        
+                    print("Attributes updated for AccessoryEffects folder.")
+                else
+                    print("AccessoryEffects folder not found.")
                 end
-
-                print("Attributes updated for AccessoryEffects folder.")
-            else
-                print("AccessoryEffects folder not found.")
             end
-        end
-        editAccessoryAttributes(attributesToSet)
+            editAccessoryAttributes(attributesToSet)
 
         print("Waiting for game to start...")
         local function waitForItemInBackpack()
