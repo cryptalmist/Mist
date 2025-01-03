@@ -1,4 +1,5 @@
 local player = game.Players.LocalPlayer
+local attributesToSet = getgenv().attributesToSet
 if game.GameId == 4712126054 then
 
     if placeId == 14582748896 then
