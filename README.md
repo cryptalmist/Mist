@@ -1,7 +1,7 @@
 combat initiation:
 ```lua
 --idk if this work
-local attributesToSet = {
+getgenv().attributesToSet = {
     Lifesteal = 1,
     Lightning_Chance = 1,
     Melee_Range = 10,
