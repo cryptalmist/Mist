@@ -1,8 +1,7 @@
 -- Define player and global attributes
 local player = game.Players.LocalPlayer
 local attributesToSet = getgenv().attributesToSet
-local placeId = game.PlaceId
-
+print("a")
 -- Ensure the script runs only in the correct game and place
 if game.GameId == 4712126054 then
     print("In Game")
