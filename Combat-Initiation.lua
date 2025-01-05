@@ -4,7 +4,7 @@ local attributesToSet = getgenv().attributesToSet
 local placeId = game.PlaceId
 
 -- Ensure the script runs only in the correct game and place
-if game.GameId == 4712126054 and placeId == 14582748896 then
+if game.GameId == 4712126054 then
     print("In Game")
 
     -- Function to edit accessory attributes
