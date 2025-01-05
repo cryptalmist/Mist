@@ -1,36 +1,40 @@
--- LocalPlayer and global attributes
 local player = game.Players.LocalPlayer
 local attributesToSet = getgenv().attributesToSet
+if game.GameId == 4712126054 then
 
-if game.GameId == 4712126054 and placeId == 14582748896 then
-    print("In Game")
-
-    -- Function to edit accessory attributes
-    local function editAccessoryAttributes(attributeList)
-        local accessoryFolder = player:FindFirstChild("AccessoryEffects")
-        if accessoryFolder then
-            for attributeName, attributeValue in pairs(attributeList) do
-                accessoryFolder:SetAttribute(attributeName, attributeValue)
+    if placeId == 14582748896 then
+        print("In Game")
+        if attributesToSet then
+            local function editAccessoryAttributes(attributeList)
+                -- Reference to the AccessoryEffects folder
+                local accessoryFolder = player:FindFirstChild("AccessoryEffects")
+                
+                if accessoryFolder then
+                    -- Iterate through the list and set or update attributes
+                    for attributeName, attributeValue in pairs(attributeList) do
+                        accessoryFolder:SetAttribute(attributeName, attributeValue)
+                    end
+        
+                    print("Attributes updated for AccessoryEffects folder.")
+                else
+                    print("AccessoryEffects folder not found.")
+                end
             end
-            print("Attributes updated for AccessoryEffects folder.")
-        else
-            print("AccessoryEffects folder not found.")
+            editAccessoryAttributes(attributesToSet)
+
+        print("Waiting for game to start...")
+        local function waitForItemInBackpack()
+            local backpack = player:WaitForChild("Backpack") -- Ensure the Backpack exists
+
+            -- Wait until the backpack contains at least one item
+            repeat
+                wait() -- Prevent busy-waiting
+            until #backpack:GetChildren() > 0
+            print("Item detected in Backpack. Proceeding...")
         end
+        waitForItemInBackpack()
     end
 
-    if attributesToSet then
-        editAccessoryAttributes(attributesToSet)
-    end
-
-    -- Wait for backpack item
-    local function waitForItemInBackpack()
-        local backpack = player:WaitForChild("Backpack")
-        repeat wait() until #backpack:GetChildren() > 0
-        print("Item detected in Backpack. Proceeding...")
-    end
-    waitForItemInBackpack()
-
-    -- Load Rayfield UI
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
     local Window = Rayfield:CreateWindow({
@@ -44,13 +48,13 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
         }
     })
 
-    -- Tabs for UI
-    local ToolTab = Window:CreateTab("Tool")
-    local CharacterTab = Window:CreateTab("Character")
+    local ToolTab = Window:CreateTab("Tool") -- Tab for tool modifications
+    local CharacterTab = Window:CreateTab("Character") -- Tab for character modifications
 
     -- Function to modify tool attributes
     local function modifyToolAttributes(toolName, attributes)
         local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
+
         if tool then
             for attribute, value in pairs(attributes) do
                 tool:SetAttribute(attribute, value)
@@ -58,17 +62,19 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
         end
     end
 
-    -- Tool equip handler
-    local function OnEquipped(tool)
-        local itemName = tool.Name
+    -- Function to handle item equipping
+    local function OnEquipped(Item)
+        local itemName = Item.Name
 
+        -- Check for swords
         if OPSwords and (itemName == "Sword" or itemName == "Firebrand" or itemName == "Katana") then
             modifyToolAttributes(itemName, { LungeRate = 0, Swingrate = 0, OffhandSwingRate = 0 })
             if itemName == "Firebrand" then
                 modifyToolAttributes(itemName, { Windup = 0 })
             end
         end
-
+        
+        -- Check for guns
         if OPGuns and (itemName == "Paintball Gun" or itemName == "BB Gun" or itemName == "Freeze Ray") then
             modifyToolAttributes(itemName, { Firerate = 0, ProjectileSpeed = 2250 })
             if itemName == "BB Gun" then
@@ -78,7 +84,8 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
                 modifyToolAttributes(itemName, { ChargeTime = 0 })
             end
         end
-
+        
+        -- Check for slingshots
         if OPSlingshot and (itemName == "Slingshot" or itemName == "Flamethrower") then
             modifyToolAttributes(itemName, { Capacity = 1000, ChargeRate = 0, Firerate = 0, ProjectileSpeed = 2250, PelletTossRate = 0 })
             if itemName == "Flamethrower" then
@@ -87,8 +94,10 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
         end
     end
 
-    -- Listener setup for tools
+    -- Function to set up event listeners for equipping tools
     local function setupToolListeners()
+        
+
         player.Character.ChildAdded:Connect(function(child)
             if child:IsA("Tool") then
                 child.Equipped:Connect(function()
@@ -105,42 +114,49 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
             end
         end)
 
-        for _, tool in ipairs(player.Character:GetChildren()) do
-            if tool:IsA("Tool") then
-                OnEquipped(tool)
+        -- Initial check for already equipped tools
+        for _, child in ipairs(player.Character:GetChildren()) do
+            if child:IsA("Tool") then
+                OnEquipped(child)
             end
         end
     end
 
-    -- Tool toggles
+    -- Tool Mod Toggles
     ToolTab:CreateToggle({
-        Name = "OP Swords",
+        Name = "OP Swords Tree",
         CurrentValue = false,
         Flag = "OP_Swords",
-        Callback = function(Value) OPSwords = Value end
+        Callback = function(Value)
+            OPSwords = Value
+        end
     })
 
     ToolTab:CreateToggle({
-        Name = "OP Guns",
+        Name = "OP Guns Tree",
         CurrentValue = false,
         Flag = "OP_Guns",
-        Callback = function(Value) OPGuns = Value end
+        Callback = function(Value)
+            OPGuns = Value
+        end
     })
 
     ToolTab:CreateToggle({
-        Name = "OP Slingshots",
+        Name = "OP Slingshots Tree",
         CurrentValue = false,
         Flag = "OP_Slingshot",
-        Callback = function(Value) OPSlingshot = Value end
+        Callback = function(Value)
+            OPSlingshot = Value
+        end
     })
 
-    -- Infinite dash toggle
+    -- Infinite Dash Toggle with 2-second interval
     CharacterTab:CreateToggle({
         Name = "Infinite Dash",
         CurrentValue = false,
         Flag = "Infinite_Dash",
         Callback = function(Value)
-            local character = player.Character
+            local character = game.Players.LocalPlayer.Character
             spawn(function()
                 while Value do
                     if character then
@@ -149,6 +165,7 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
                     end
                     wait(0.5)
                 end
+                -- Reset values when Infinite Dash is toggled off
                 if character then
                     character:SetAttribute("DashRegenTime", 1)
                     character:SetAttribute("DashRegenFury", 1)
@@ -157,11 +174,11 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
         end
     })
 
-    -- Setup listeners on character respawn
-    player.CharacterAdded:Connect(function()
+    -- Connect tool listeners on player character respawn
+    game.Players.LocalPlayer.CharacterAdded:Connect(function()
         wait()
         setupToolListeners()
     end)
 
-    Rayfield:LoadConfiguration()
+    Rayfield:LoadConfiguration() -- Load saved configurations on launch
 end
