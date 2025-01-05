@@ -1,40 +1,42 @@
+-- Define player and global attributes
 local player = game.Players.LocalPlayer
 local attributesToSet = getgenv().attributesToSet
-if game.GameId == 4712126054 then
+local placeId = game.PlaceId
 
-    if placeId == 14582748896 then
-        print("In Game")
-        if attributesToSet then
-            local function editAccessoryAttributes(attributeList)
-                -- Reference to the AccessoryEffects folder
-                local accessoryFolder = player:FindFirstChild("AccessoryEffects")
-                
-                if accessoryFolder then
-                    -- Iterate through the list and set or update attributes
-                    for attributeName, attributeValue in pairs(attributeList) do
-                        accessoryFolder:SetAttribute(attributeName, attributeValue)
-                    end
-        
-                    print("Attributes updated for AccessoryEffects folder.")
-                else
-                    print("AccessoryEffects folder not found.")
-                end
+-- Ensure the script runs only in the correct game and place
+if game.GameId == 4712126054 and placeId == 14582748896 then
+    print("In Game")
+
+    -- Function to edit accessory attributes
+    local function editAccessoryAttributes(attributeList)
+        local accessoryFolder = player:FindFirstChild("AccessoryEffects")
+
+        if accessoryFolder then
+            for attributeName, attributeValue in pairs(attributeList) do
+                accessoryFolder:SetAttribute(attributeName, attributeValue)
             end
-            editAccessoryAttributes(attributesToSet)
-
-        print("Waiting for game to start...")
-        local function waitForItemInBackpack()
-            local backpack = player:WaitForChild("Backpack") -- Ensure the Backpack exists
-
-            -- Wait until the backpack contains at least one item
-            repeat
-                wait() -- Prevent busy-waiting
-            until #backpack:GetChildren() > 0
-            print("Item detected in Backpack. Proceeding...")
+            print("Attributes updated for AccessoryEffects folder.")
+        else
+            print("AccessoryEffects folder not found.")
         end
-        waitForItemInBackpack()
     end
 
+    -- Update accessory attributes if specified
+    if attributesToSet then
+        editAccessoryAttributes(attributesToSet)
+    end
+
+    -- Function to wait for an item to appear in the player's backpack
+    local function waitForItemInBackpack()
+        local backpack = player:WaitForChild("Backpack")
+        repeat
+            wait()
+        until #backpack:GetChildren() > 0
+        print("Item detected in Backpack. Proceeding...")
+    end
+    waitForItemInBackpack()
+
+    -- Load Rayfield UI Library
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
     local Window = Rayfield:CreateWindow({
@@ -48,21 +50,23 @@ if game.GameId == 4712126054 then
         }
     })
 
-    local ToolTab = Window:CreateTab("Tool") -- Tab for tool modifications
-    local CharacterTab = Window:CreateTab("Character") -- Tab for character modifications
+    -- Create tabs for tools and character
+    local ToolTab = Window:CreateTab("Tool")
+    local CharacterTab = Window:CreateTab("Character")
 
     -- Function to modify tool attributes
     local function modifyToolAttributes(toolName, attributes)
         local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
-
         if tool then
             for attribute, value in pairs(attributes) do
-                tool:SetAttribute(attribute, value)
+                if tool:GetAttribute(attribute) ~= nil then
+                    tool:SetAttribute(attribute, value)
+                end
             end
         end
     end
 
-    -- Function to handle item equipping
+    -- Function to handle tool equipping
     local function OnEquipped(Item)
         local itemName = Item.Name
 
@@ -73,7 +77,7 @@ if game.GameId == 4712126054 then
                 modifyToolAttributes(itemName, { Windup = 0 })
             end
         end
-        
+
         -- Check for guns
         if OPGuns and (itemName == "Paintball Gun" or itemName == "BB Gun" or itemName == "Freeze Ray") then
             modifyToolAttributes(itemName, { Firerate = 0, ProjectileSpeed = 2250 })
@@ -84,7 +88,7 @@ if game.GameId == 4712126054 then
                 modifyToolAttributes(itemName, { ChargeTime = 0 })
             end
         end
-        
+
         -- Check for slingshots
         if OPSlingshot and (itemName == "Slingshot" or itemName == "Flamethrower") then
             modifyToolAttributes(itemName, { Capacity = 1000, ChargeRate = 0, Firerate = 0, ProjectileSpeed = 2250, PelletTossRate = 0 })
@@ -94,10 +98,8 @@ if game.GameId == 4712126054 then
         end
     end
 
-    -- Function to set up event listeners for equipping tools
+    -- Set up listeners for tool equipping
     local function setupToolListeners()
-        
-
         player.Character.ChildAdded:Connect(function(child)
             if child:IsA("Tool") then
                 child.Equipped:Connect(function()
@@ -114,7 +116,7 @@ if game.GameId == 4712126054 then
             end
         end)
 
-        -- Initial check for already equipped tools
+        -- Check for tools already equipped
         for _, child in ipairs(player.Character:GetChildren()) do
             if child:IsA("Tool") then
                 OnEquipped(child)
@@ -150,22 +152,19 @@ if game.GameId == 4712126054 then
         end
     })
 
-    -- Infinite Dash Toggle with 2-second interval
+    -- Infinite Dash Toggle
     CharacterTab:CreateToggle({
         Name = "Infinite Dash",
         CurrentValue = false,
         Flag = "Infinite_Dash",
         Callback = function(Value)
-            local character = game.Players.LocalPlayer.Character
+            local character = player.Character
             spawn(function()
-                while Value do
-                    if character then
-                        character:SetAttribute("DashRegenTime", 0.05)
-                        character:SetAttribute("DashRegenFury", 0.05)
-                    end
+                while Value and character do
+                    character:SetAttribute("DashRegenTime", 0.05)
+                    character:SetAttribute("DashRegenFury", 0.05)
                     wait(0.5)
                 end
-                -- Reset values when Infinite Dash is toggled off
                 if character then
                     character:SetAttribute("DashRegenTime", 1)
                     character:SetAttribute("DashRegenFury", 1)
@@ -174,11 +173,12 @@ if game.GameId == 4712126054 then
         end
     })
 
-    -- Connect tool listeners on player character respawn
-    game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    -- Connect tool listeners on respawn
+    player.CharacterAdded:Connect(function()
         wait()
         setupToolListeners()
     end)
 
-    Rayfield:LoadConfiguration() -- Load saved configurations on launch
+    -- Load saved Rayfield configuration
+    Rayfield:LoadConfiguration()
 end
