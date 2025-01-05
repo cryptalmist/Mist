@@ -37,122 +37,62 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
     waitForItemInBackpack()
 
     -- Load Rayfield UI Library
-    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+    local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/UI-Interface/CustomFIeld/main/RayField.lua'))()
 
+    -- Create the main UI window
     local Window = Rayfield:CreateWindow({
-        Name = "CryptHub - Combat-Initiation",
+        Name = "CryptHub - Enhanced UI",
         LoadingTitle = "CryptHub",
-        LoadingSubtitle = "Combat Script",
+        LoadingSubtitle = "Utility and Enhancements",
         ConfigurationSaving = {
             Enabled = true,
             FolderName = "CryptHub",
-            FileName = "CombatInitiation"
-        }
+            FileName = "EnhancedSettings"
+        },
+        KeySystem = false -- Set to true if you want to use the Rayfield key system
     })
 
-    -- Create tabs for tools and character
-    local ToolTab = Window:CreateTab("Tool")
-    local CharacterTab = Window:CreateTab("Character")
+    -- Create tabs for tools, character, and utility
+    local ToolTab = Window:CreateTab("Tools", 4483362458) -- Example icon ID
+    local CharacterTab = Window:CreateTab("Character", 4483362460)
+    local UtilityTab = Window:CreateTab("Utilities", 4483362462)
 
-    -- Function to modify tool attributes
-    local function modifyToolAttributes(toolName, attributes)
-        local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
-        if tool then
-            for attribute, value in pairs(attributes) do
-                if tool:GetAttribute(attribute) ~= nil then
-                    tool:SetAttribute(attribute, value)
-                end
-            end
-        end
-    end
+    -- Tool Modifications Section
+    ToolTab:CreateSection("Tool Modifications")
 
-    -- Function to handle tool equipping
-    local function OnEquipped(Item)
-        local itemName = Item.Name
-
-        -- Check for swords
-        if OPSwords and (itemName == "Sword" or itemName == "Firebrand" or itemName == "Katana") then
-            modifyToolAttributes(itemName, { LungeRate = 0, Swingrate = 0, OffhandSwingRate = 0 })
-            if itemName == "Firebrand" then
-                modifyToolAttributes(itemName, { Windup = 0 })
-            end
-        end
-
-        -- Check for guns
-        if OPGuns and (itemName == "Paintball Gun" or itemName == "BB Gun" or itemName == "Freeze Ray") then
-            modifyToolAttributes(itemName, { Firerate = 0, ProjectileSpeed = 2250 })
-            if itemName == "BB Gun" then
-                modifyToolAttributes(itemName, { MinShots = 2, MaxShots = math.huge })
-            end
-            if itemName == "Freeze Ray" then
-                modifyToolAttributes(itemName, { ChargeTime = 0 })
-            end
-        end
-
-        -- Check for slingshots
-        if OPSlingshot and (itemName == "Slingshot" or itemName == "Flamethrower") then
-            modifyToolAttributes(itemName, { Capacity = 1000, ChargeRate = 0, Firerate = 0, ProjectileSpeed = 2250, PelletTossRate = 0 })
-            if itemName == "Flamethrower" then
-                modifyToolAttributes(itemName, { Cooldown = 0, Intake = 0 })
-            end
-        end
-    end
-
-    -- Set up listeners for tool equipping
-    local function setupToolListeners()
-        player.Character.ChildAdded:Connect(function(child)
-            if child:IsA("Tool") then
-                child.Equipped:Connect(function()
-                    OnEquipped(child)
-                end)
-            end
-        end)
-
-        player.Backpack.ChildAdded:Connect(function(child)
-            if child:IsA("Tool") then
-                child.Equipped:Connect(function()
-                    OnEquipped(child)
-                end)
-            end
-        end)
-
-        -- Check for tools already equipped
-        for _, child in ipairs(player.Character:GetChildren()) do
-            if child:IsA("Tool") then
-                OnEquipped(child)
-            end
-        end
-    end
-
-    -- Tool Mod Toggles
     ToolTab:CreateToggle({
-        Name = "OP Swords Tree",
+        Name = "Enable OP Swords",
         CurrentValue = false,
         Flag = "OP_Swords",
         Callback = function(Value)
             OPSwords = Value
+            print("OP Swords: ", Value)
         end
     })
 
     ToolTab:CreateToggle({
-        Name = "OP Guns Tree",
+        Name = "Enable OP Guns",
         CurrentValue = false,
         Flag = "OP_Guns",
         Callback = function(Value)
             OPGuns = Value
+            print("OP Guns: ", Value)
         end
     })
 
     ToolTab:CreateToggle({
-        Name = "OP Slingshots Tree",
+        Name = "Enable OP Slingshots",
         CurrentValue = false,
-        Flag = "OP_Slingshot",
+        Flag = "OP_Slingshots",
         Callback = function(Value)
             OPSlingshot = Value
+            print("OP Slingshots: ", Value)
         end
     })
 
-    -- Infinite Dash Toggle
+    -- Character Enhancements Section
+    CharacterTab:CreateSection("Movement Enhancements")
+
     CharacterTab:CreateToggle({
         Name = "Infinite Dash",
         CurrentValue = false,
@@ -170,14 +110,26 @@ if game.GameId == 4712126054 and placeId == 14582748896 then
                     character:SetAttribute("DashRegenFury", 1)
                 end
             end)
+            print("Infinite Dash: ", Value)
         end
     })
 
-    -- Connect tool listeners on respawn
-    player.CharacterAdded:Connect(function()
-        wait()
-        setupToolListeners()
-    end)
+    -- Utility Section
+    UtilityTab:CreateSection("General Utilities")
+
+    UtilityTab:CreateButton({
+        Name = "Reset Attributes",
+        Callback = function()
+            local character = player.Character
+            if character then
+                character:SetAttribute("DashRegenTime", 1)
+                character:SetAttribute("DashRegenFury", 1)
+                print("Attributes reset to default values.")
+            end
+        end
+    })
+
+    UtilityTab:CreateLabel("More utilities coming soon...")
 
     -- Load saved Rayfield configuration
     Rayfield:LoadConfiguration()
