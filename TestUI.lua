@@ -27,11 +27,12 @@ local Lighting = game:GetService("Lighting")
 local VeryImportantPart = Instance.new("Part") -- fake zone for tricking temperature/oxygen scripts
 -- 													it's scuffed but works on literally any exec
 -- UI Lib
+
 local repo = 'https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/'
+
 local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
 local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
 local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-
 local Options = Library.Options
 local Toggles = Library.Toggles
 
@@ -62,7 +63,7 @@ local function GetToggleValue(Name: string): boolean?
         dbgwarn("Toggle not found:", Name)
         return nil
     else
-        return Toggle.Value
+        return Toggles.Value
     end
 end
 
@@ -324,19 +325,15 @@ do
     end
 
     function Utils.CharacterChildAdded(Child: Instance)
-        print(1.1)
         if Child:IsA("Tool") then
             CurrentTool = Child
-            print(1.2)
             print(CurrentTool)
         end
     end
 
     function Utils.CharacterChildRemoved(Child: Instance)
-        print(2.1)
         if Child:IsA("Tool") then
             CurrentTool = nil
-            print(2.2)
         end
     end
 
@@ -344,9 +341,7 @@ do
         for _, Child in next, Character:GetChildren() do
             Utils.CharacterChildAdded(Child)
         end
-        print(1)
         Collect(Character.ChildAdded:Connect(Utils.CharacterChildAdded))
-        print(2)
         Collect(Character.ChildRemoved:Connect(Utils.CharacterChildRemoved))
         print(CurrentTool)
         local Zone = Character:WaitForChild("zone", 1) :: ObjectValue
@@ -421,18 +416,23 @@ do
     end
     
 
-    function Utils.UpdateFishingZones()
-        local Values = {}
-        
+    function Utils.UpdateFishingZonesDropdown()
+        local FishingZones = {}
+
         for _, Zone in next, workspace:WaitForChild("zones"):WaitForChild("fishing"):GetChildren() do
             if not FishingZones[Zone.Name] then
                 FishingZones[Zone.Name] = Zone
-                table.insert(Values, Zone.Name)
             end
         end
 
-        table.sort(Values)
-        Options.ZoneFishDropdown:SetValues(Values)
+        local FishingZones_DropDownValues = {}
+
+        for Name, Zone in next, FishingZones do
+            table.insert(FishingZones_DropDownValues, Name)
+            print(Name)
+        end
+
+        Options.ZoneFishDropdown:SetValues(FishingZones_DropDownValues)
     end
 end
 
@@ -653,36 +653,37 @@ pcall(function()
     })
 
     ZoneFishing:AddToggle("ZoneFish", {
-		Text = "Zone-fish",
-		Default = false,
-		Tooltip = "Zones fish for you.",
-		Callback = function(Value: boolean)
-			if Value then
-				Toggles.InfiniteOxygen:SetValue(true)
-				ZoneFishOrigin = LocalPlayer.Character:GetPivot()
-			else
-				if ZoneFishOrigin then
-					LocalPlayer.Character.Humanoid:UnequipTools()
-					for _ = 1, 10 do
-						task.wait()
-						Utils.TP(ZoneFishOrigin.Position)
-					end
-					ZoneFishOrigin = nil
-				end
-			end
-		end,
-	})
+        Text = "Zone-fish",
+        Default = false,
+        Tooltip = "Zones fish for you.",
+        Callback = function(Value: boolean)
+            if Value then
+                Toggles.InfiniteOxygen:SetValue(true)
+                ZoneFishOrigin = LocalPlayer.Character:GetPivot()
+            else
+                if ZoneFishOrigin then
+                    LocalPlayer.Character.Humanoid:UnequipTools()
+                    for _ = 1, 10 do
+                        task.wait()
+                        Utils.TP(ZoneFishOrigin.Position)
+                    end
+                    ZoneFishOrigin = nil
+                end
+            end
+        end,
+    })
 
     ZoneFishing:AddDropdown("ZoneFishDropdown", {
-		Default = 1,
-		Multi = false,
-		Text = "Select zone",
-		Tooltip = "Zone to fish in",
+        Values = {"a"},
+        Default = 1,
+        Multi = false,
+        Text = "Select zone",
+        Tooltip = "Zone to fish in",
         Searchable = true,
-	})
+    })
 
     ZoneFishing:AddButton("Refresh",function()
-        UpdateFishingZones()
+        Utils.UpdateFishingZonesDropdown()
     end)
 end)
 
@@ -741,6 +742,7 @@ local ShopGroupBox = Tabs.Main:AddLeftGroupbox("Remote Shop")
 
 pcall(function()
 	ShopGroupBox:AddDropdown("RemoteShopDropdown", {
+        Values = {"a"},
 		Default = 1,
 		Multi = false,
 		Text = "Target item",
@@ -890,13 +892,10 @@ local AutoCastCoroutine = coroutine.create(function()
 
     while task.wait(0.1) do
         if Toggles.AutoCast.Value then
-
             pcall(function()
                 if not CurrentTool then
                     return
                 end
-                print(CurrentTool)
-
     
                 local Values = CurrentTool:FindFirstChild("values")
                 if CurrentTool and Values then
@@ -1128,7 +1127,7 @@ Collect(RunService.RenderStepped:Connect(function()
         Utils.ToggleLocationCC(true)
     end
 
-    if Toggle.NoUnderWaterE.Value then
+    if Toggles.NoUnderWaterE.Value then
         Utils.ToggleUnderWater(false)
     else
         Utils.ToggleUnderWater(true)
@@ -1136,7 +1135,7 @@ Collect(RunService.RenderStepped:Connect(function()
 end))
 
 Collect(RunService.PostSimulation:Connect(function()
-    if Toggles.ZoneFish.Value then
+    if GetToggleValue("ZoneFish") then
         if State.GettingMeteor then
             return -- dont conflict with meteor grabbing
         end
@@ -1147,11 +1146,11 @@ Collect(RunService.PostSimulation:Connect(function()
             end
         end
 
-        local Zone = FishingZones[Options.ZoneFishDropdown.Value]
+        local Zone = FishingZones[GetOptionValue("ZoneFishDropdown")]
 
         if Zone then
             local Origin = Zone:GetPivot()
-            Utils.TP(Origin - Vector3.new(0, 5, -10))
+            Utils.TP(Origin - Vector3.new(0, 20, 0))
 
             if CurrentTool then
                 local Bobber = CurrentTool:FindFirstChild("bobber")
@@ -1164,19 +1163,18 @@ Collect(RunService.PostSimulation:Connect(function()
                 end
             end
         end
-    elseif Toggle.InstantBob.Value then
+    elseif GetToggleValue("InstantBob") then
         if CurrentTool then
             local Bobber = CurrentTool:FindFirstChild("bobber")
             if Bobber then
                 local Params = RaycastParams.new()
-
                 Params.FilterType = Enum.RaycastFilterType.Include
                 Params.FilterDescendantsInstances = { workspace.Terrain }
-
+        
                 local RaycastResult = workspace:Raycast(Bobber.Position, -Vector3.yAxis * 100, Params)
-
+        
                 if RaycastResult then
-                    if RaycastResult.Instance:IsA("Terrain") then
+                    if RaycastResult.Instance:IsA("Terrain") and RaycastResult.Material == Enum.Material.Water then
                         Bobber:PivotTo(CFrame.new(RaycastResult.Position))
                     end
                 end
