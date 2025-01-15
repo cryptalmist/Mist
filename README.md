@@ -7,7 +7,7 @@ getgenv().attributesToSet = {
     Melee_Range = 10,
     Pogo_Range = 2
 }
-loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/CryptHub/refs/heads/main/Combat-Initiation.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/Combat-Initiation.lua"))()
 ```
 buff script:
 ```lua
