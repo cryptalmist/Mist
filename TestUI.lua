@@ -119,6 +119,8 @@ end
 local Camera = workspace.CurrentCamera
 
 local ZoneFishOrigin = nil
+local FishingZones = {}
+local FishingZones_DropDownValues = {}
 
 local PreAutoloadConfig = true
 
@@ -127,14 +129,14 @@ local State = {
     OwnedBoats = {},
 }
 
--- local GlobalStorage = {
---     PeakZones = {
---         ["Overgrowth Caves"] = true,a
---         ["Frigid Cavern"] = true,
---         ["Cryogenic Canal"] = true,
---         ["Glacial Grotto"] = true
---     }
--- }
+local GlobalStorage = {
+    PeakZones = {
+        ["Overgrowth Caves"] = true,
+        ["Frigid Cavern"] = true,
+        ["Cryogenic Canal"] = true,
+        ["Glacial Grotto"] = true
+    }
+}
 
 -- Random function
 local Utils = {}
@@ -327,7 +329,16 @@ do
     function Utils.CharacterChildAdded(Child: Instance)
         if Child:IsA("Tool") then
             CurrentTool = Child
-            print(CurrentTool)
+
+        elseif Child:IsA("Humanoid") then
+            Collect(Child.StateChanged:Connect(function()
+                if Toggles.ZoneFish.Value then
+                    Child:ChangeState(Enum.HumanoidStateType.Running)
+                end
+            end))
+            Collect(Child.Died:Once(function()
+                Toggles.ZoneFish:SetValue(false)
+            end))
         end
     end
 
@@ -346,7 +357,7 @@ do
         print(CurrentTool)
         local Zone = Character:WaitForChild("zone", 1) :: ObjectValue
 
-        if Zone then
+        if GlobalStorage.PeakZones[Zone.Name] then
             Collect(RunService.RenderStepped:Connect(function()
                 if Toggles.DisablePeakEffects.Value then
                     Zone.Value = VeryImportantPart
@@ -417,15 +428,13 @@ do
     
 
     function Utils.UpdateFishingZonesDropdown()
-        local FishingZones = {}
-
+        FishingZones={}
+        FishingZones_DropDownValues={}
         for _, Zone in next, workspace:WaitForChild("zones"):WaitForChild("fishing"):GetChildren() do
             if not FishingZones[Zone.Name] then
                 FishingZones[Zone.Name] = Zone
             end
         end
-
-        local FishingZones_DropDownValues = {}
 
         for Name, Zone in next, FishingZones do
             table.insert(FishingZones_DropDownValues, Name)
@@ -557,7 +566,6 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-	-- Creates a new tab titled Main
 	Main = Window:AddTab('Main'),
     Render = Window:AddTab('Visuals'),
 	Settings = Window:AddTab("Settings"),
@@ -645,11 +653,6 @@ pcall(function()
         Text = "Center-shake [Improves AutoShake]",
         Default = false,
         Tooltip = "Centers the shake ",
-        Callback = function(Value: boolean)
-            if Value then
-                Toggles.AutoShakeClick:SetValue(false)
-            end
-        end,
     })
 
     ZoneFishing:AddToggle("ZoneFish", {
@@ -674,7 +677,7 @@ pcall(function()
     })
 
     ZoneFishing:AddDropdown("ZoneFishDropdown", {
-        Values = {"a"},
+        Values = {},
         Default = 1,
         Multi = false,
         Text = "Select zone",
@@ -684,6 +687,29 @@ pcall(function()
 
     ZoneFishing:AddButton("Refresh",function()
         Utils.UpdateFishingZonesDropdown()
+    end)
+end)
+
+-- Teleport
+local TeleportsGroupBox = Tabs.Main:AddLeftGroupbox("Teleports")
+
+pcall(function()
+    TeleportsGroupBox:AddDropdown("TeleportsDropdown", {
+        Values = TeleportLocations_DropDownValues,
+        Default = 1,
+        Multi = false,
+        Searchable = true,
+        Text = "Select location",
+        Tooltip = "Location to teleport to",
+    })
+
+    TeleportsGroupBox:AddButton("Teleport", function()
+        local Selected = GetOptionValue("TeleportsDropdown")
+        local Position = TeleportLocations[Selected]
+
+        if Position then
+            Utils.TP(Position)
+        end
     end)
 end)
 
@@ -738,7 +764,7 @@ pcall(function()
 end)
 
 -- Shops
-local ShopGroupBox = Tabs.Main:AddLeftGroupbox("Remote Shop")
+local ShopGroupBox = Tabs.Main:AddRightGroupbox("Remote Shop")
 
 pcall(function()
 	ShopGroupBox:AddDropdown("RemoteShopDropdown", {
@@ -779,7 +805,7 @@ pcall(function()
 
 	CameraVisualsGroup:AddToggle("NoUnderWaterE", {
 		Text = "No blur/color Under Water",
-		Default = false,
+		Default = true,
 		Tooltip = "Disables the under water Color-Correction and Blur effect.",
 	})
 
@@ -978,6 +1004,22 @@ local AutoClickCoroutine = coroutine.create(function()
     function Utils.MountShakeUI(ShakeUI: ScreenGui)
         local SafeZone: Frame? = ShakeUI:WaitForChild("safezone", 5) :: Frame?
 
+        -- Auto click toggle
+        if Toggles.AutoShakeClick.Value then
+            while LocalPlayer.PlayerGui:FindFirstChild("shakeui") do
+                pcall(function()
+                    local Button = SafeZone:FindFirstChild("button")
+                    if Button then
+                        Button.Size = UDim2.new(1000, 0, 1000, 0)
+                        VirtualUser:Button1Down(Vector2.new(1, 1))
+                        VirtualUser:Button1Up(Vector2.new(1, 1))
+                    end
+                end)
+                wait()
+            end
+            return
+        end
+
         local function HandleButton(Button: ImageButton)
             Button.Selectable = true -- For some reason this is false for the first 0.2 seconds.
 
@@ -1006,11 +1048,9 @@ local AutoClickCoroutine = coroutine.create(function()
             SafeZone.Size = UDim2.fromOffset(0, 0)
             SafeZone.Position = UDim2.fromScale(0.5, 0.5)
             SafeZone.AnchorPoint = Vector2.new(0.5, 0.5)
-            print("Centered SafeZone")
         end
 
         if Toggles.AutoShakeNav.Value then
-            print("AutoShakeNav enabled")
             local Connection = SafeZone.ChildAdded:Connect(function(Child)
                 if Child:IsA("ImageButton") then
                     local Done = false
@@ -1036,23 +1076,6 @@ local AutoClickCoroutine = coroutine.create(function()
                 wait()
             until not SafeZone:IsDescendantOf(LocalPlayer.PlayerGui)
             Connection:Disconnect()
-            print("SafeZone removed, navigation disconnected")
-        end
-
-        -- Auto click toggle
-        if Toggles.AutoShakeClick.Value then
-            print("AutoShakeClick enabled")
-            while LocalPlayer.PlayerGui:FindFirstChild("shakeui") do
-                pcall(function()
-                    local Button = SafeZone:FindFirstChild("button")
-                    if Button then
-                        Button.Size = UDim2.new(1000, 0, 1000, 0)
-                        VirtualUser:Button1Down(Vector2.new(1, 1))
-                        VirtualUser:Button1Up(Vector2.new(1, 1))
-                    end
-                end)
-                wait()
-            end
         end
     end
 
@@ -1061,8 +1084,6 @@ local AutoClickCoroutine = coroutine.create(function()
             Utils.MountShakeUI(Child)
         end
     end))
-
-    print("AutoClickCoroutine finished initialization")
 end)
 
 -- AutoReelCoroutine
@@ -1135,7 +1156,7 @@ Collect(RunService.RenderStepped:Connect(function()
 end))
 
 Collect(RunService.PostSimulation:Connect(function()
-    if GetToggleValue("ZoneFish") then
+    if Toggles.ZoneFish.Value then
         if State.GettingMeteor then
             return -- dont conflict with meteor grabbing
         end
@@ -1146,11 +1167,11 @@ Collect(RunService.PostSimulation:Connect(function()
             end
         end
 
-        local Zone = FishingZones[GetOptionValue("ZoneFishDropdown")]
+        local Zone = FishingZones[Options.ZoneFishDropdown.Value]
 
         if Zone then
             local Origin = Zone:GetPivot()
-            Utils.TP(Origin - Vector3.new(0, 20, 0))
+            Utils.TP(Origin + Vector3.new(0, -40, 0))
 
             if CurrentTool then
                 local Bobber = CurrentTool:FindFirstChild("bobber")
@@ -1163,7 +1184,7 @@ Collect(RunService.PostSimulation:Connect(function()
                 end
             end
         end
-    elseif GetToggleValue("InstantBob") then
+    elseif Toggles.InstantBob.Value then
         if CurrentTool then
             local Bobber = CurrentTool:FindFirstChild("bobber")
             if Bobber then
@@ -1201,5 +1222,9 @@ if LocalPlayer.Character then
     Utils.CharacterAdded(LocalPlayer.Character)
 end
 
+SaveManager:LoadAutoloadConfig()
+PreAutoloadConfig = false
+
 Utils.UpdateShopDropdown()
+Utils.UpdateFishingZonesDropdown()
 Utils.GameNotify("beta :) 🔥")
