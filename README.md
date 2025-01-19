@@ -1,3 +1,8 @@
+Fisch:
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/Fisch.lua"))()
+```
+
 combat initiation:
 ```lua
 --idk if this work
