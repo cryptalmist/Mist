@@ -40,3 +40,5 @@ end
 -- Run the function to edit attributes
 editAccessoryAttributes()
 ```
+
+Thx chatGPT and people letme borrow code :)
