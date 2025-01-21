@@ -3,6 +3,9 @@ Fisch:
 loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/Fisch.lua"))()
 ```
 
+
+
+# broken spot
 combat initiation:
 ```lua
 --idk if this work
