@@ -1,4 +1,4 @@
-Fisch:
+Fisch (detected):
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/Fisch.lua"))()
 ```
