@@ -1,135 +1,218 @@
 -- Define player and global attributes
 local player = game.Players.LocalPlayer
 local attributesToSet = getgenv().attributesToSet
-print("a")
+
 -- Ensure the script runs only in the correct game and place
-if game.GameId == 4712126054 then
-    print("In Game")
+print("In Game")
 
-    -- Function to edit accessory attributes
-    local function editAccessoryAttributes(attributeList)
-        local accessoryFolder = player:FindFirstChild("AccessoryEffects")
-
-        if accessoryFolder then
-            for attributeName, attributeValue in pairs(attributeList) do
-                accessoryFolder:SetAttribute(attributeName, attributeValue)
-            end
-            print("Attributes updated for AccessoryEffects folder.")
-        else
-            print("AccessoryEffects folder not found.")
+-- Function to edit accessory attributes
+local function editAccessoryAttributes(attributeList)
+    local accessoryFolder = player:FindFirstChild("AccessoryEffects")
+    if accessoryFolder then
+        for attributeName, attributeValue in pairs(attributeList) do
+            accessoryFolder:SetAttribute(attributeName, attributeValue)
         end
+        print("Attributes updated for AccessoryEffects folder.")
+    else
+        print("AccessoryEffects folder not found.")
+    end
+end
+
+if attributesToSet then
+    editAccessoryAttributes(attributesToSet)
+end
+
+-- Function to wait for an item to appear in the player's backpack
+local function waitForItemInBackpack()
+    local backpack = player:WaitForChild("Backpack")
+    
+    -- Check if there is already an item in the backpack
+    if #backpack:GetChildren() > 0 then
+        print("Item detected in Backpack. Proceeding immediately...")
+        return
     end
 
-    -- Update accessory attributes if specified
-    if attributesToSet then
-        editAccessoryAttributes(attributesToSet)
-    end
+    -- If no item, wait for one to be added
+    print("Waiting for an item to appear in Backpack...")
+    backpack.ChildAdded:Wait()
+    print("Item detected in Backpack. Proceeding...")
+end
+waitForItemInBackpack()
 
-    -- Function to wait for an item to appear in the player's backpack
-    local function waitForItemInBackpack()
-        local backpack = player:WaitForChild("Backpack")
-        repeat
-            wait()
-        until #backpack:GetChildren() > 0
-        print("Item detected in Backpack. Proceeding...")
-    end
-    waitForItemInBackpack()
+-- Load Linoria UI Library
+local repo = 'https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/'
 
-    -- Load Rayfield UI Library
-    local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/UI-Interface/CustomFIeld/main/RayField.lua'))()
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+local Options = Library.Options
+local Toggles = Library.Toggles
 
-    -- Create the main UI window
-    local Window = Rayfield:CreateWindow({
-        Name = "CryptHub - Enhanced UI",
-        LoadingTitle = "CryptHub",
-        LoadingSubtitle = "Utility and Enhancements",
-        ConfigurationSaving = {
-            Enabled = true,
-            FolderName = "CryptHub",
-            FileName = "EnhancedSettings"
-        },
-        KeySystem = false -- Set to true if you want to use the Rayfield key system
-    })
+local Window = Library:CreateWindow({
+	Title = 'Mist | Combat Initiation',
+	Center = true,
+	AutoShow = true,
+	Resizable = true,
+	NotifySide = "Right",
+	TabPadding = 1,
+	MenuFadeTime = 0,
+	ShowCustomCursor = false,
+})
 
-    -- Create tabs for tools, character, and utility
-    local ToolTab = Window:CreateTab("Tools", 4483362458) -- Example icon ID
-    local CharacterTab = Window:CreateTab("Character", 4483362460)
-    local UtilityTab = Window:CreateTab("Utilities", 4483362462)
+print(1)
 
-    -- Tool Modifications Section
-    ToolTab:CreateSection("Tool Modifications")
+local Tabs = {
+    Main = Window:AddTab("Tools"),
+    Settings = Window:AddTab("Settings"),
+}
 
-    ToolTab:CreateToggle({
-        Name = "Enable OP Swords",
-        CurrentValue = false,
-        Flag = "OP_Swords",
-        Callback = function(Value)
-            OPSwords = Value
-            print("OP Swords: ", Value)
-        end
-    })
+-- UI Elements
+local Toolbox = Tabs.Main:AddLeftGroupbox("Item")
 
-    ToolTab:CreateToggle({
-        Name = "Enable OP Guns",
-        CurrentValue = false,
-        Flag = "OP_Guns",
-        Callback = function(Value)
-            OPGuns = Value
-            print("OP Guns: ", Value)
-        end
-    })
+Toolbox:AddToggle("OPSwords", {
+    Text = "Enable OP Swords",
+    Default = false })
 
-    ToolTab:CreateToggle({
-        Name = "Enable OP Slingshots",
-        CurrentValue = false,
-        Flag = "OP_Slingshots",
-        Callback = function(Value)
-            OPSlingshot = Value
-            print("OP Slingshots: ", Value)
-        end
-    })
+Toolbox:AddToggle("OPGuns", {
+    Text = "Enable OP Guns",
+    Default = false })
 
-    -- Character Enhancements Section
-    CharacterTab:CreateSection("Movement Enhancements")
+Toolbox:AddToggle("OPSlingshots", {
+    Text = "Enable OP Slingshots",
+    Default = false })
 
-    CharacterTab:CreateToggle({
-        Name = "Infinite Dash",
-        CurrentValue = false,
-        Flag = "Infinite_Dash",
-        Callback = function(Value)
-            local character = player.Character
-            spawn(function()
-                while Value and character do
+local Dash = Tabs.Main:AddRightGroupbox("Dash")
+
+Dash:AddToggle("Infinite_Dash", {
+    Text = "Infinite Dash",
+    Default = false,
+    Callback = function(Value)
+        task.spawn(function()
+            while Value and player.Character do
+                local character = player.Character
+                if character then
                     character:SetAttribute("DashRegenTime", 0.05)
                     character:SetAttribute("DashRegenFury", 0.05)
-                    wait(0.5)
                 end
-                if character then
-                    character:SetAttribute("DashRegenTime", 1)
-                    character:SetAttribute("DashRegenFury", 1)
-                end
-            end)
-            print("Infinite Dash: ", Value)
-        end
-    })
-
-    -- Utility Section
-    UtilityTab:CreateSection("General Utilities")
-
-    UtilityTab:CreateButton({
-        Name = "Reset Attributes",
-        Callback = function()
-            local character = player.Character
-            if character then
-                character:SetAttribute("DashRegenTime", 1)
-                character:SetAttribute("DashRegenFury", 1)
-                print("Attributes reset to default values.")
+                task.wait(0.5)
             end
-        end
-    })
+            
+            -- Reset attributes when disabled
+            if player.Character then
+                player.Character:SetAttribute("DashRegenTime", 1)
+                player.Character:SetAttribute("DashRegenFury", 1)
+            end
+        end)
+    end
+})
 
-    UtilityTab:CreateLabel("More utilities coming soon...")
+local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu")
 
-    -- Load saved Rayfield configuration
-    Rayfield:LoadConfiguration()
+MenuGroup:AddButton("Unload", function() Library:Unload() end)
+
+MenuGroup:AddLabel("Menu bind")
+    :AddKeyPicker("MenuKeybind", { Default = "RightControl", NoUI = true, Text = "Menu keybind"})
+
+Library.ToggleKeybind = Options.MenuKeybind
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+
+SaveManager:IgnoreThemeSettings()
+
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+
+ThemeManager:SetFolder("MistHub")
+SaveManager:SetFolder("MistHub/CI")
+
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+ThemeManager:ApplyToTab(Tabs.Settings)
+
+-- Ensure Toggles are Ready Before Proceeding
+local function GetToggleValue(Name: string): boolean
+    if not Toggles or not Toggles[Name] then
+        warn("Toggle not found or not initialized:", Name)
+        return false -- Default to false
+    end
+    return Toggles[Name].Value
 end
+
+-- Function to modify tool attributes
+local function modifyToolAttributes(toolName, attributes)
+    local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
+
+    if tool then
+        for attribute, value in pairs(attributes) do
+            tool:SetAttribute(attribute, value)
+        end 
+    end
+end
+
+-- Function to handle item equipping
+local function OnEquipped(Item)
+    local itemName = Item.Name
+
+    -- Check for swords
+    if GetToggleValue("OPSwords") and (itemName == "Sword" or itemName == "Firebrand" or itemName == "Katana") then
+        modifyToolAttributes(itemName, { LungeRate = 0, Swingrate = 0, OffhandSwingRate = 0 })
+        if itemName == "Firebrand" then
+            modifyToolAttributes(itemName, { Windup = 0 })
+        end
+    end
+    
+    -- Check for guns
+    if GetToggleValue("OPGuns") and (itemName == "Paintball Gun" or itemName == "BB Gun" or itemName == "Freeze Ray") then
+        modifyToolAttributes(itemName, { Firerate = 0, ProjectileSpeed = 2250 })
+        if itemName == "BB Gun" then
+            modifyToolAttributes(itemName, { MinShots = 2, MaxShots = math.huge })
+        end
+        if itemName == "Freeze Ray" then
+            modifyToolAttributes(itemName, { ChargeTime = 0 })
+        end
+    end
+    
+    -- Check for slingshots
+    if GetToggleValue("OPSlingshots") and (itemName == "Slingshot" or itemName == "Flamethrower") then
+        modifyToolAttributes(itemName, { Capacity = 10000, ChargeRate = 0, Firerate = 0, Spread = 0, ProjectileSpeed = 2250 })
+        if itemName == "Flamethrower" then
+            modifyToolAttributes(itemName, { Cooldown = 0 })
+        end
+    end
+end
+
+-- Function to set up event listeners for equipping tools
+local function setupToolListeners()
+    player.Character.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            child.Equipped:Connect(function()
+                OnEquipped(child)
+            end)
+        end
+    end)
+
+    player.Backpack.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            child.Equipped:Connect(function()
+                OnEquipped(child)
+            end)
+        end
+    end)
+
+    -- Initial check for already equipped tools
+    for _, child in ipairs(player.Character:GetChildren()) do
+        if child:IsA("Tool") then
+            OnEquipped(child)
+        end
+    end
+end
+
+
+player.CharacterAdded:Connect(function()
+    wait()
+    setupToolListeners()
+end)
+
+setupToolListeners()
+
+Library:Notify("CryptHub UI Loaded!", 5)
