@@ -4,14 +4,12 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs
 ```
 
 
-
-# broken spot
 combat initiation:
 ```lua
 --idk if this work
 getgenv().attributesToSet = {
     Lifesteal = 1,
-    Lightning_Chance = 1,
+    Lightning_Chance = 0,
     Melee_Range = 10,
     Pogo_Range = 2
 }
