@@ -1,4 +1,10 @@
 -- Steal from Sasware
+
+local PreloadConstants = {
+	PlaceVersionSupport = 4322,
+	BypassVersion = "V3",
+}
+
 -- Kinda Important stuffs
 local NO_HOOKING = false
 
@@ -33,8 +39,8 @@ local repo = 'https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/'
 local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
 local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
 local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-local Options = Library.Options
-local Toggles = Library.Toggles
+local Options = getgenv().Options
+local Toggles = getgenv().Toggles
 
     --[[
     Recursively waits for instances to exist from a root instance.
@@ -84,6 +90,7 @@ local Configuration = {
 
 local Remotes = {
     ReelFinished = ReplicatedStorage.events:WaitForChild("reelfinished"),
+    SellAll = ReplicatedStorage.events:WaitForChild("SellAll"),
 }
 
 -- Smt
@@ -92,12 +99,6 @@ local Interface = {
     -- FishRadar = Items["Fish Radar"]["Fish Radar"],
     TeleportSpots = WaitForTable(workspace, { "world", "spawns", "TpSpots" }),
     Inventory = WaitForTable(LocalPlayer.PlayerGui, { "hud", "safezone", "backpack" }),
-    MeteorItems = workspace:WaitForChild("MeteorItems"),
-    PlayerData = ReplicatedStorage:WaitForChild("playerstats"):WaitForChild(LocalPlayer.Name),
-    NPCs = workspace:WaitForChild("world"):WaitForChild("npcs"),
-    BoatModels = WaitForTable(ReplicatedStorage, { "resources", "replicated", "instances", "vessels" }),
-    Active = workspace:WaitForChild("active"),
-    ActiveBoats = workspace:WaitForChild("active"):WaitForChild("boats"),
 }
 
 local Collection = {}
@@ -365,18 +366,6 @@ do
         return nil
     end
 
-    function Utils.BoatsChanged()
-        local Boats = Interface.PlayerData.Boats:GetChildren()
-
-        State.OwnedBoats = {}
-
-        for _, Boat in next, Boats do
-            table.insert(State.OwnedBoats, Boat.Name)
-        end
-
-        Options.BoatSpawnDropdown:SetValues(State.OwnedBoats)
-    end
-
     function Utils.UpdateShopDropdown()
         local Values = { "Bait Crate" }
     
@@ -433,7 +422,7 @@ do
         end
     end
 end
-
+print(1)
 -- Test if hooking is enabled
 pcall(function()
     if not (hookfunction and hookmetamethod) then
@@ -523,24 +512,69 @@ local function Unload()
 
     OnUnload:Fire()
 
-    platform=nil
+    platform = nil
     Library = nil
     ThemeManager = nil
     SaveManager = nil
-    Toggles = nil
-    Options = nil
     Utils = nil
     AutoCastCoroutine = nil
     AutoClickCoroutine = nil
     AutoReelCoroutine = nil
 
-
+    getgenv().Toggles = nil
+    getgenv().Options = nil
+    getgenv().sasware_fisch_unload = nil
     getgenv().MainUnload = nil
     Unload = nil
 
     Unloaded = true
 end
 getgenv().MainUnload = Unload
+print(2)
+
+-- Check PlaceVersion
+
+if game.PlaceVersion > PreloadConstants.PlaceVersionSupport then
+
+    local PromptToast, Button1, Button2 = InteractiveToast()
+    PromptToast.Parent = CoreGui
+
+    local Con1, Con2, Done
+
+    Con1 = Button1.MouseButton1Click:Connect(function()
+        PromptToast:Destroy()
+        LocalPlayer:Kick("Aborted due to PlaceVersion being higher than supported version.")
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end)
+
+    Con2 = Button2.MouseButton1Click:Connect(function()
+        PromptToast:Destroy()
+        Con1:Disconnect()
+        Con2:Disconnect()
+        Done = true
+    end)
+
+    repeat RunService.Heartbeat:Wait() until Done == true
+end
+print(3)
+
+-- Load bypasses
+
+pcall(function()
+    if game.PlaceVersion >= 3744 and (game.PlaceVersion <= PreloadConstants.PlaceVersionSupport) then
+        local URL = "https://raw.githubusercontent.com/centerepic/sasware-fisch/refs/heads/main/bypasses/"
+            .. PreloadConstants.BypassVersion
+            .. ".luau"
+
+        local Success, Error = pcall(function()
+            return loadstring(game:HttpGet(URL))()
+        end)
+
+        if not Success then
+            LocalPlayer:Kick("Failed to load SasGuard! " .. Error)
+        end
+    end
+end)
 
 -- UI riel
 local Window = Library:CreateWindow({
@@ -566,7 +600,6 @@ local CastingGroup = FishingTabBox:AddTab("Casting")
 local ReelingGroup = FishingTabBox:AddTab("Reeling")
 local ShakingGroup = FishingTabBox:AddTab("Shaking")
 local ZoneFishing = Tabs.Main:AddLeftGroupbox("Zone Fish")
-
 pcall(function()
     CastingGroup:AddToggle("AutoCast", {
         Text = "Auto-cast",
@@ -912,19 +945,21 @@ end)
 
 Toggles.InfiniteOxygen:OnChanged(function(Value: boolean)
     if Value then
-        LocalPlayer.Character.client.oxygen.Enabled=false
+        LocalPlayer.Character.Resources.oxygen.Enabled=false
     else
-        LocalPlayer.Character.client.oxygen.Enabled=true
+        LocalPlayer.Character.Resources.oxygen.Enabled=true
     end
 end)
 
 Toggles.DisablePeakEffects:OnChanged(function(Value: boolean)
     if Value then
-        LocalPlayer.Character.client:WaitForChild("oxygen(peaks)").Enabled = false
-        LocalPlayer.Character.client.temperature.Enabled = false
+        LocalPlayer.Character.Resources:WaitForChild("oxygen(peaks)").Enabled = false
+        LocalPlayer.Character.Resources:WaitForChild("temperature(heat)").Enabled = false
+        LocalPlayer.Character.Resources.temperature.Enabled = false
     else
-        LocalPlayer.Character.client:WaitForChild("oxygen(peaks)").Enabled = true
-        LocalPlayer.Character.client.temperature.Enabled = true
+        LocalPlayer.Character.Resources:WaitForChild("oxygen(peaks)").Enabled = true
+        LocalPlayer.Character.Resources:WaitForChild("temperature(heat)").Enabled = true
+        LocalPlayer.Character.Resources.temperature.Enabled = true
     end
 end)
 
@@ -1197,7 +1232,7 @@ Collect(RunService.PostSimulation:Connect(function()
 
         if Zone then
             local Origin = Zone:GetPivot()
-            Utils.TP(Origin + Vector3.new(0, -40, 0))
+            Utils.TP(Origin + Vector3.new(0, -20, 0))
 
             if CurrentTool then
                 local Bobber = CurrentTool:FindFirstChild("bobber")
@@ -1273,10 +1308,10 @@ Collect(LocalPlayer.CharacterAdded:Connect(Utils.CharacterAdded))
 if LocalPlayer.Character then
     Utils.CharacterAdded(LocalPlayer.Character)
 end
-
+print(1)
 Utils.UpdateShopDropdown()
 Utils.UpdateFishingZonesDropdown()
 
 SaveManager:LoadAutoloadConfig()
 PreAutoloadConfig = false
-Utils.GameNotify("beta :) 🔥")
+Utils.GameNotify("Mist 🔥")
