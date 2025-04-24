@@ -1,9 +1,9 @@
 -- Steal from Sasware
 
--- local PreloadConstants = {
--- 	PlaceVersionSupport = 4322,
--- 	BypassVersion = "V3",
--- }
+local PreloadConstants = {
+	PlaceVersionSupport = 4322,
+	BypassVersion = "V3",
+}
 
 -- Kinda Important stuffs
 local NO_HOOKING = false
@@ -532,49 +532,49 @@ end
 getgenv().MainUnload = Unload
 print(2)
 
--- -- Check PlaceVersion
+-- Check PlaceVersion
 
--- if game.PlaceVersion > PreloadConstants.PlaceVersionSupport then
+if game.PlaceVersion > PreloadConstants.PlaceVersionSupport then
 
---     local PromptToast, Button1, Button2 = InteractiveToast()
---     PromptToast.Parent = CoreGui
+    local PromptToast, Button1, Button2 = InteractiveToast()
+    PromptToast.Parent = CoreGui
 
---     local Con1, Con2, Done
+    local Con1, Con2, Done
 
---     Con1 = Button1.MouseButton1Click:Connect(function()
---         PromptToast:Destroy()
---         LocalPlayer:Kick("Aborted due to PlaceVersion being higher than supported version.")
---         game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
---     end)
+    Con1 = Button1.MouseButton1Click:Connect(function()
+        PromptToast:Destroy()
+        LocalPlayer:Kick("Aborted due to PlaceVersion being higher than supported version.")
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end)
 
---     Con2 = Button2.MouseButton1Click:Connect(function()
---         PromptToast:Destroy()
---         Con1:Disconnect()
---         Con2:Disconnect()
---         Done = true
---     end)
+    Con2 = Button2.MouseButton1Click:Connect(function()
+        PromptToast:Destroy()
+        Con1:Disconnect()
+        Con2:Disconnect()
+        Done = true
+    end)
 
---     repeat RunService.Heartbeat:Wait() until Done == true
--- end
--- print(3)
+    repeat RunService.Heartbeat:Wait() until Done == true
+end
+print(3)
 
--- -- Load bypasses
+-- Load bypasses
 
--- pcall(function()
---     if game.PlaceVersion >= 3744 and (game.PlaceVersion <= PreloadConstants.PlaceVersionSupport) then
---         local URL = "https://raw.githubusercontent.com/centerepic/sasware-fisch/refs/heads/main/bypasses/"
---             .. PreloadConstants.BypassVersion
---             .. ".luau"
+pcall(function()
+    if game.PlaceVersion >= 3744 and (game.PlaceVersion <= PreloadConstants.PlaceVersionSupport) then
+        local URL = "https://raw.githubusercontent.com/cryptalmist/sasware-fisch/refs/heads/main/bypasses/"
+            .. PreloadConstants.BypassVersion
+            .. ".luau"
 
---         local Success, Error = pcall(function()
---             return loadstring(game:HttpGet(URL))()
---         end)
+        local Success, Error = pcall(function()
+            return loadstring(game:HttpGet(URL))()
+        end)
 
---         if not Success then
---             LocalPlayer:Kick("Failed to load SasGuard! " .. Error)
---         end
---     end
--- end)
+        if not Success then
+            LocalPlayer:Kick("Failed to load SasGuard! " .. Error)
+        end
+    end
+end)
 
 -- UI riel
 local Window = Library:CreateWindow({
