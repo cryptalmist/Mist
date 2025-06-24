@@ -175,7 +175,7 @@ local function OnEquipped(Item)
     if GetToggleValue("OPSlingshots") and (itemName == "Slingshot" or itemName == "Flamethrower") then
         modifyToolAttributes(itemName, { Capacity = 10000, ChargeRate = 0, Firerate = 0, Spread = 0, ProjectileSpeed = 2250, PelletTossRate = 0})
         if itemName == "Flamethrower" then
-            modifyToolAttributes(itemName, { Cooldown = 0 })
+            modifyToolAttributes(itemName, { Cooldown = 0, EjectUse = 0, Intake = 0 , EjectRate = 1.5})
         end
     end
 end
