@@ -85,7 +85,7 @@ local Dash = Tabs.Main:AddRightGroupbox("Dash")
 
 Dash:AddToggle("Infinite_Dash", {
     Text = "Infinite Dash",
-    Default = false,
+    Default = true,
     Callback = function(Value)
         task.spawn(function()
             while Value and player.Character do
@@ -110,7 +110,7 @@ local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu")
 
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 
-MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightAlt", NoUI = true, Text = "Menu keybind"})
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "LeftAlt", NoUI = true, Text = "Menu keybind"})
 
 Library.ToggleKeybind = Options.MenuKeybind
 
