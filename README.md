@@ -1,8 +1,8 @@
-Fisch (may be detected) but work now:
+[QOL](queue_on_load)-patch:
+[Atlas-BSS](https://discord.gg/KevBAZ3SE9)
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/Fisch.lua"))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/QOL-patch/bss-atlas.lua'))()
 ```
-Fisch SasGuard: `https://github.com/cryptalmist/sasware-fisch/tree/main/bypasses` V3
 
 combat initiation:
 ```lua
@@ -41,5 +41,10 @@ end
 -- Run the function to edit attributes
 editAccessoryAttributes()
 ```
+Fisch (may be detected) but work now:
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/Fisch.lua"))()
+```
+Fisch SasGuard: `https://github.com/cryptalmist/sasware-fisch/tree/main/bypasses` V3
 
 Thx chatGPT and people letme borrow code :)
