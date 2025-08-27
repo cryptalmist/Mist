@@ -1,6 +1,6 @@
 [QOL](queue_on_load)-patch:
 
--[Atlas-BSS](https://discord.gg/KevBAZ3SE9)
+- [Atlas-BSS](https://discord.gg/KevBAZ3SE9)
 ```lua
 loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/QOL-patch/bss-atlas.lua'))()
 ```
