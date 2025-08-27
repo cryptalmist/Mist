@@ -71,21 +71,21 @@ local Toolbox = Tabs.Main:AddLeftGroupbox("Item")
 
 Toolbox:AddToggle("OPSwords", {
     Text = "Enable OP Swords",
-    Default = false })
+    Default = true })
 
 Toolbox:AddToggle("OPGuns", {
     Text = "Enable OP Guns",
-    Default = false })
+    Default = true })
 
 Toolbox:AddToggle("OPSlingshots", {
     Text = "Enable OP Slingshots",
-    Default = false })
+    Default = true })
 
 local Dash = Tabs.Main:AddRightGroupbox("Dash")
 
 Dash:AddToggle("Infinite_Dash", {
     Text = "Infinite Dash",
-    Default = false,
+    Default = true,
     Callback = function(Value)
         task.spawn(function()
             while Value and player.Character do
@@ -110,8 +110,7 @@ local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu")
 
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 
-MenuGroup:AddLabel("Menu bind")
-    :AddKeyPicker("MenuKeybind", { Default = "RightControl", NoUI = true, Text = "Menu keybind"})
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "LeftAlt", NoUI = true, Text = "Menu keybind"})
 
 Library.ToggleKeybind = Options.MenuKeybind
 
@@ -174,9 +173,9 @@ local function OnEquipped(Item)
     
     -- Check for slingshots
     if GetToggleValue("OPSlingshots") and (itemName == "Slingshot" or itemName == "Flamethrower") then
-        modifyToolAttributes(itemName, { Capacity = 10000, ChargeRate = 0, Firerate = 0, Spread = 0, ProjectileSpeed = 2250 })
+        modifyToolAttributes(itemName, { Capacity = 10000, ChargeRate = 0, Firerate = 0, Spread = 0, ProjectileSpeed = 2250, PelletTossRate = 0})
         if itemName == "Flamethrower" then
-            modifyToolAttributes(itemName, { Cooldown = 0 })
+            modifyToolAttributes(itemName, { Cooldown = 0, EjectUse = 0, Intake = 0 , EjectRate = 1.5})
         end
     end
 end

@@ -2,7 +2,7 @@ Fisch (may be detected) but work now:
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/Fisch.lua"))()
 ```
-
+Fisch SasGuard: `https://github.com/cryptalmist/sasware-fisch/tree/main/bypasses` V3
 
 combat initiation:
 ```lua

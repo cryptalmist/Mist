@@ -562,7 +562,7 @@ print(3)
 
 pcall(function()
     if game.PlaceVersion >= 3744 and (game.PlaceVersion <= PreloadConstants.PlaceVersionSupport) then
-        local URL = "https://raw.githubusercontent.com/centerepic/sasware-fisch/refs/heads/main/bypasses/"
+        local URL = "https://raw.githubusercontent.com/cryptalmist/sasware-fisch/refs/heads/main/bypasses/"
             .. PreloadConstants.BypassVersion
             .. ".luau"
 
