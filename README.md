@@ -2,6 +2,7 @@
 
 - [Atlas-BSS](https://discord.gg/KevBAZ3SE9)
 ```lua
+getgenv().BSS_JumpPower = 80
 loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/QOL-patch/bss-atlas.lua'))()
 ```
 
