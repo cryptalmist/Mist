@@ -15,7 +15,7 @@ else
 end
 
 -- Force JumpPower using getgenv() configuration
-local desiredJumpPower = getgenv().BSS_JumpPower or 100 -- Default is 100 if not set
+local desiredJumpPower = getgenv().BSS_JumpPower or 80 -- Default is 100 if not set
 print("[INFO] Forcing JumpPower to: " .. desiredJumpPower)
 
 local player = game.Players.LocalPlayer
