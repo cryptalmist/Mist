@@ -14,6 +14,32 @@ else
     print("[INFO] Teleport queue already set. Skipping queue setup.")
 end
 
+-- Force JumpPower using getgenv() configuration
+local desiredJumpPower = getgenv().BSS_JumpPower or 100 -- Default is 100 if not set
+print("[INFO] Forcing JumpPower to: " .. desiredJumpPower)
+
+local player = game.Players.LocalPlayer
+
+local function setJumpPower(humanoid)
+    humanoid.UseJumpPower = true
+    humanoid.JumpPower = desiredJumpPower
+    print("[SUCCESS] JumpPower set to " .. desiredJumpPower)
+end
+
+if player and player.Character then
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        setJumpPower(humanoid)
+    else
+        print("[WARNING] Humanoid not found. Waiting for respawn...")
+    end
+end
+
+player.CharacterAdded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    setJumpPower(hum)
+end)
+
 -- Always load main script
 print("[INFO] Loading main script from: https://raw.githubusercontent.com/Chris12089/atlasbss/main/script.lua")
 local success, err = pcall(function()
