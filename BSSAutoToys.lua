@@ -93,4 +93,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ Smart Toy Loop Running (40min safety, full refresh 2s after use)")
+print("✅ Smart Toy Loop Running")
