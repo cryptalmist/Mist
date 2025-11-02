@@ -2,7 +2,7 @@ bss:
 ```lua
 --// HIVE MASK
 getgenv().HiveMaskConfig = getgenv().HiveMaskConfig or {
-	CheckInterval = 0.25, -- seconds between position checks
+	CheckInterval = 2, -- seconds between position checks
 	InsideMask = "Honey Mask", -- mask to equip inside hive
 	OutsideMask = "Diamond Mask", -- mask to equip outside hive
 	PrintStatus = true, -- print logs
