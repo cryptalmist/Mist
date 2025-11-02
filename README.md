@@ -1,3 +1,40 @@
+bss:
+```lua
+--// HIVE MASK
+getgenv().HiveMaskConfig = getgenv().HiveMaskConfig or {
+	CheckInterval = 0.25, -- seconds between position checks
+	InsideMask = "Honey Mask", -- mask to equip inside hive
+	OutsideMask = "Diamond Mask", -- mask to equip outside hive
+	PrintStatus = true, -- print logs
+}
+
+--// TOYS
+getgenv().Toys = getgenv().Toys or {
+    "Honey Dispenser",
+    "Coconut Dispenser",
+    "Treat Dispenser",
+    "Blueberry Dispenser",
+    "Strawberry Dispenser",
+    "Wealth Clock",
+    "Blue Field Booster",
+    "Field Booster",
+    "Red Field Booster",
+    "Wealth Clock",
+    "Glue Dispenser",
+    "Glue Dispenser",
+    "Sprout Summoner",
+    "Honneystorm",
+    "Free Royal Jelly Dispenser"
+}
+
+getgenv().ToyCheckDelay = getgenv().ToyCheckDelay or 5
+
+loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/BSSAutoToys.lua')()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/MaskAtHive.lua')()
+```
+
+
+
 [QOL](queue_on_load)-patch:
 
 - [Atlas-BSS](https://discord.gg/KevBAZ3SE9)
