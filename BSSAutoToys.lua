@@ -12,6 +12,8 @@ getgenv().Toys = getgenv().Toys or {
     "Wealth Clock",
     "Glue Dispenser",
     "Glue Dispenser",
+    "Sprout Summoner",
+    "Honneystorm",
     "Free Royal Jelly Dispenser"
 }
 getgenv().ToyCheckDelay = getgenv().ToyCheckDelay or 5
