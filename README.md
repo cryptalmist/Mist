@@ -29,8 +29,8 @@ getgenv().Toys = getgenv().Toys or {
 
 getgenv().ToyCheckDelay = getgenv().ToyCheckDelay or 5
 
-loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/BSSAutoToys.lua')()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/MaskAtHive.lua')()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/BSSAutoToys.lua'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/cryptalmist/Mist/refs/heads/main/MaskAtHive.lua'))()
 ```
 
 
