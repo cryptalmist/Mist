@@ -2,19 +2,15 @@ if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
 
-task.wait(3)
-
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
-
--- Globals
-_G.NEON_ESP = true
 local ESP_ENABLED = true
 local connections = {}
+local detectedParts = {}
 
 -- ================= COLOR PROFILES =================
 local COLOR_TOLERANCE = 5
@@ -33,144 +29,131 @@ local COLOR_PROFILES = {
 }
 -- ==================================================
 
--- Detection memory
-local detectedParts = {} -- [Instance] = true
+-- ---------- Spawn utils ----------
+local function getNearestSpawnXZ(pos)
+	local closest, bestDist
 
--- ---------- Utility ----------
-local function colorMatch(c1, c2, tol)
-	return math.abs(c1.R * 255 - c2.R * 255) <= tol
-		and math.abs(c1.G * 255 - c2.G * 255) <= tol
-		and math.abs(c1.B * 255 - c2.B * 255) <= tol
-end
+	for _, s in ipairs(SPAWNS) do
+		local dx = pos.X - s.x
+		local dz = pos.Z - s.z
+		local dist = math.sqrt(dx * dx + dz * dz)
 
-local function getColorProfile(color)
-	for _, profile in ipairs(COLOR_PROFILES) do
-		if colorMatch(color, profile.color, COLOR_TOLERANCE) then
-			return profile
+		if not bestDist or dist < bestDist then
+			bestDist = dist
+			closest = s.name
 		end
 	end
-	return nil
+
+	return closest or "Unknown"
 end
 
-local function playDetectSound(soundId)
+-- ---------- Color utils ----------
+local function colorMatch(a, b)
+	return math.abs(a.R * 255 - b.R * 255) <= COLOR_TOLERANCE
+		and math.abs(a.G * 255 - b.G * 255) <= COLOR_TOLERANCE
+		and math.abs(a.B * 255 - b.B * 255) <= COLOR_TOLERANCE
+end
+
+local function getProfile(color)
+	for _, p in ipairs(COLOR_PROFILES) do
+		if colorMatch(color, p.color) then
+			return p
+		end
+	end
+end
+
+-- ---------- Sound ----------
+local function playSound(id)
+	if not id then return end
 	local s = Instance.new("Sound")
-	s.SoundId = soundId
+	s.SoundId = id
 	s.Volume = 2.4
 	s.Parent = workspace
 	s:Play()
-
-	s.Ended:Once(function()
-		s:Destroy()
-	end)
+	s.Ended:Once(function() s:Destroy() end)
 end
 
--- ---------- ESP Core ----------
-local function clearESP()
-	for _, v in ipairs(workspace:GetChildren()) do
-		if v:FindFirstChild("BallESP") then
-			v.BallESP:Destroy()
-		end
-	end
-	for _, c in ipairs(connections) do
-		c:Disconnect()
-	end
-	table.clear(connections)
-	table.clear(detectedParts)
-end
-
+-- ---------- Detection ----------
 local function isNeonSphere(p)
-	if not p:IsA("BasePart") then return nil end
-	if p.Material ~= Enum.Material.Neon then return nil end
-
-	local profile = getColorProfile(p.Color)
-	if not profile then return nil end
-
-	if p:IsA("Part") and p.Shape == Enum.PartType.Ball then
-		return profile
-	end
-
-	if p:IsA("MeshPart") then
-		return profile
-	end
-
-	return nil
+	if not p:IsA("BasePart") then return end
+	if p.Material ~= Enum.Material.Neon then return end
+	if p:IsA("Part") and p.Shape ~= Enum.PartType.Ball then return end
+	return getProfile(p.Color)
 end
 
+-- ---------- ESP ----------
 local function createESP(part, profile)
-	if part:FindFirstChild("BallESP") then return end
-
 	local bill = Instance.new("BillboardGui")
 	bill.Name = "BallESP"
-	bill.Size = UDim2.new(0, 220, 0, 50)
+	bill.Size = UDim2.new(0, 230, 0, 70)
 	bill.AlwaysOnTop = true
 	bill.Adornee = part
 	bill.Parent = part
 
-	local text = Instance.new("TextLabel")
-	text.Parent = bill
-	text.Size = UDim2.fromScale(1, 1)
-	text.BackgroundTransparency = 1
-	text.TextColor3 = part.Color
-	text.TextStrokeTransparency = 0
-	text.TextScaled = true
-	text.Font = Enum.Font.GothamBold
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = part.Color
+	label.TextStrokeTransparency = 0
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.Parent = bill
 
-	local conn = RunService.RenderStepped:Connect(function()
-		if not ESP_ENABLED then return end
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		if not ESP_ENABLED or not part.Parent then
+			conn:Disconnect()
+			return
+		end
+
 		local char = player.Character
-		if not char then return end
-		local hrp = char:FindFirstChild("HumanoidRootPart")
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		if not hrp then return end
 
 		local dist = (hrp.Position - part.Position).Magnitude
-		text.Text = string.format("%s | %.1f m", profile.name, dist)
+		local nearest = getNearestSpawnXZ(part.Position)
+
+		label.Text = string.format(
+			"%s\n%.1f m\n%s",
+			profile.name,
+			dist,
+			nearest
+		)
 	end)
 
 	table.insert(connections, conn)
 end
 
-local function scanWorkspace()
+-- ---------- Scan ----------
+local function scan()
 	for _, v in ipairs(workspace:GetChildren()) do
 		if not detectedParts[v] then
 			local profile = isNeonSphere(v)
 			if profile then
 				detectedParts[v] = true
 				createESP(v, profile)
-
-				-- console output (ONCE per new cache)
-				local pos = v.Position
-				warn(string.format(
-					"[CACHE DETECTED] %s | X: %.1f Y: %.1f Z: %.1f",
-					profile.name,
-					pos.X, pos.Y, pos.Z
-				))
-
-				if profile.soundId then
-					playDetectSound(profile.soundId)
-				end
+				playSound(profile.soundId)
 			end
 		end
 	end
 end
 
-local function toggleESP(state)
-	ESP_ENABLED = state
-	_G.NEON_ESP = state
+-- ---------- Toggle ----------
+local function toggle()
+	ESP_ENABLED = not ESP_ENABLED
 
-	if not state then
-		clearESP()
-		warn("Neon Sphere ESP: OFF")
-	else
-		scanWorkspace()
-		warn("Neon Sphere ESP: ON")
+	if not ESP_ENABLED then
+		for _, v in ipairs(workspace:GetChildren()) do
+			local esp = v:FindFirstChild("BallESP")
+			if esp then esp:Destroy() end
+		end
+		table.clear(detectedParts)
 	end
 end
 
--- Hotkey: K
-UserInputService.InputBegan:Connect(function(input, gp)
-	if gp then return end
-	if input.KeyCode == Enum.KeyCode.K then
-		toggleESP(not ESP_ENABLED)
+UserInputService.InputBegan:Connect(function(i, gp)
+	if not gp and i.KeyCode == Enum.KeyCode.K then
+		toggle()
 	end
 end)
 
@@ -179,11 +162,10 @@ task.spawn(function()
 	while true do
 		task.wait(1)
 		if ESP_ENABLED then
-			scanWorkspace()
+			scan()
 		end
 	end
 end)
 
--- Start
-scanWorkspace()
-print("Caches Initialized")
+scan()
+print("Neon Cache ESP ready")
