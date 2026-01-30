@@ -27,6 +27,24 @@ local COLOR_PROFILES = {
 		soundId = "rbxassetid://107261392908541",
 	},
 }
+
+local SPAWNS = {
+	{ name = "Main",      x = 16,    z = -106 },
+	{ name = "Downtown",  x = -597,  z = -465 },
+	{ name = "Hilton",    x = 174,   z = 161 },
+	{ name = "Office",    x = -1206, z = 815 },
+	{ name = "Uptown",    x = -1137, z = -1765 },
+	{ name = "Crest",     x = 381,   z = -1291 },
+	{ name = "Vertex",    x = 1259,  z = 1026 },
+	{ name = "Park",      x = 2558,  z = -1445 },
+	{ name = "Arch",      x = 2043,  z = 198 },
+	{ name = "Townside",  x = 2433,  z = 1616 },
+	{ name = "Highrise",  x = 116,   z = 1961 },
+	{ name = "Titan",     x = 1444,  z = 1738 },
+	{ name = "Eastside",  x = 2764,  z = 3106 },
+	{ name = "Lowrise",   x = 1860,  z = 4035 },
+}
+
 -- ==================================================
 
 -- ---------- Spawn utils ----------
