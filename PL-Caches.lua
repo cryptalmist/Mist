@@ -3,7 +3,6 @@ if not game:IsLoaded() then
 end
 
 task.wait(3)
-print("Purkur")
 
 -- Services
 local Players = game:GetService("Players")
@@ -24,12 +23,12 @@ local COLOR_PROFILES = {
 	{
 		name = "Ultimate",
 		color = Color3.fromRGB(255, 100, 100),
-		soundId = "rbxassetid://82845990304289", -- change if needed
+		soundId = "rbxassetid://82845990304289",
 	},
 	{
 		name = "Legend",
 		color = Color3.fromRGB(255, 255, 100),
-		soundId = "rbxassetid://107261392908541", -- change if needed
+		soundId = "rbxassetid://107261392908541",
 	},
 }
 -- ==================================================
@@ -148,6 +147,14 @@ local function scanWorkspace()
 				detectedParts[v] = true
 				createESP(v, profile)
 
+				-- console output (ONCE per new cache)
+				local pos = v.Position
+				warn(string.format(
+					"[CACHE DETECTED] %s | X: %.1f Y: %.1f Z: %.1f",
+					profile.name,
+					pos.X, pos.Y, pos.Z
+				))
+
 				if profile.soundId and not playedSoundThisScan then
 					playDetectSound(profile.soundId)
 					playedSoundThisScan = true
@@ -190,3 +197,4 @@ end)
 
 -- Start
 scanWorkspace()
+print("Caches Initialized")
