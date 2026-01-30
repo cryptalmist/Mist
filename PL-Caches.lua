@@ -33,15 +33,14 @@ local COLOR_PROFILES = {
 }
 -- ==================================================
 
--- Detection memory & sound debounce
+-- Detection memory
 local detectedParts = {} -- [Instance] = true
-local soundCooldown = false
 
 -- ---------- Utility ----------
 local function colorMatch(c1, c2, tol)
-	return math.abs(c1.R*255 - c2.R*255) <= tol
-	and math.abs(c1.G*255 - c2.G*255) <= tol
-	and math.abs(c1.B*255 - c2.B*255) <= tol
+	return math.abs(c1.R * 255 - c2.R * 255) <= tol
+		and math.abs(c1.G * 255 - c2.G * 255) <= tol
+		and math.abs(c1.B * 255 - c2.B * 255) <= tol
 end
 
 local function getColorProfile(color)
@@ -54,21 +53,14 @@ local function getColorProfile(color)
 end
 
 local function playDetectSound(soundId)
-	if soundCooldown then return end
-	soundCooldown = true
-
 	local s = Instance.new("Sound")
 	s.SoundId = soundId
-	s.Volume = 1
+	s.Volume = 2.4
 	s.Parent = workspace
 	s:Play()
 
 	s.Ended:Once(function()
 		s:Destroy()
-	end)
-
-	task.delay(0.3, function()
-		soundCooldown = false
 	end)
 end
 
@@ -138,8 +130,6 @@ local function createESP(part, profile)
 end
 
 local function scanWorkspace()
-	local playedSoundThisScan = false
-
 	for _, v in ipairs(workspace:GetChildren()) do
 		if not detectedParts[v] then
 			local profile = isNeonSphere(v)
@@ -155,9 +145,8 @@ local function scanWorkspace()
 					pos.X, pos.Y, pos.Z
 				))
 
-				if profile.soundId and not playedSoundThisScan then
+				if profile.soundId then
 					playDetectSound(profile.soundId)
-					playedSoundThisScan = true
 				end
 			end
 		end
