@@ -9,10 +9,10 @@ local player = Players.LocalPlayer
 local POS_SOFT, POS_HARD = 4150, 4550
 local NEG_SOFT, NEG_HARD = -2156, -2450
 
-local TAP_DELAY = 0.16
-local FLIP_COOLDOWN = 0.6
+local TAP_DELAY = 0.1
+local FLIP_COOLDOWN = 0.3
 local TOGGLE_KEY = Enum.KeyCode.U
-local dev = true
+local dev = false
 
 -- state
 local enabled = false
