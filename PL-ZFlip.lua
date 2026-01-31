@@ -4,33 +4,60 @@ local VIM = game:GetService("VirtualInputManager")
 local UIS = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local root = char:WaitForChild("HumanoidRootPart")
 
 -- LIMITS
 local POS_SOFT, POS_HARD = 4150, 4550
 local NEG_SOFT, NEG_HARD = -2156, -2450
 
-local TAP_DELAY = 0.06
-local FLIP_COOLDOWN = 0.6
+local TAP_DELAY = 0.1
+local FLIP_COOLDOWN = 0.3
 local TOGGLE_KEY = Enum.KeyCode.U
 local dev = false
+
 -- state
 local enabled = false
 local targetZ = nil
 local flipping = false
+
+-- runtime refs
+local char = nil
+local root = nil
+local humanoid = nil
 
 -- debug throttle
 local lastPrint = 0
 local PRINT_INTERVAL = 0.25
 
 local function dprint(...)
-	if dev == true then
+	if dev then
 		print("[Z-AUTO]", ...)
 	end
 end
 
--- toggle
+-- ================= CHARACTER BIND =================
+local function bindCharacter(character)
+	char = character
+	root = character:WaitForChild("HumanoidRootPart")
+	humanoid = character:WaitForChild("Humanoid")
+
+	targetZ = nil
+	flipping = false
+
+	dprint("Character bound")
+
+	humanoid.Died:Once(function()
+		dprint("Character died, waiting for respawn")
+	end)
+end
+
+-- initial bind
+if player.Character then
+	bindCharacter(player.Character)
+end
+
+player.CharacterAdded:Connect(bindCharacter)
+
+-- ================= TOGGLE =================
 UIS.InputBegan:Connect(function(input, gp)
 	if gp then return end
 	if input.KeyCode == TOGGLE_KEY then
@@ -41,6 +68,7 @@ UIS.InputBegan:Connect(function(input, gp)
 	end
 end)
 
+-- ================= INPUT =================
 local function tap(key)
 	VIM:SendKeyEvent(true, key, false, game)
 	task.wait(TAP_DELAY)
@@ -48,7 +76,7 @@ local function tap(key)
 end
 
 local function flip()
-	if flipping or not enabled then return end
+	if flipping or not enabled or not root then return end
 	flipping = true
 
 	print("FLIP TRIGGERED")
@@ -63,7 +91,9 @@ local function flip()
 	flipping = false
 end
 
+-- ================= LOGIC =================
 local function getDirection()
+	if not root then return end
 	local vz = root.AssemblyLinearVelocity.Z
 	if vz > 0.5 then
 		return "POS", vz
@@ -84,8 +114,9 @@ local function pickTarget(dir)
 	return t
 end
 
+-- ================= HEARTBEAT =================
 RunService.Heartbeat:Connect(function()
-	if not enabled or not root or not root.Parent or flipping then return end
+	if not enabled or flipping or not root or not root.Parent then return end
 
 	local dir, vz = getDirection()
 	if not dir then return end
@@ -93,7 +124,7 @@ RunService.Heartbeat:Connect(function()
 	local z = root.Position.Z
 	local now = os.clock()
 
-	if now - lastPrint >= PRINT_INTERVAL then
+	if dev and now - lastPrint >= PRINT_INTERVAL then
 		lastPrint = now
 		dprint(
 			"Dir:", dir,
@@ -124,4 +155,4 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
-print("ZFlip Initialized")
+print("ZFlip Initialized (Respawn Safe)")
