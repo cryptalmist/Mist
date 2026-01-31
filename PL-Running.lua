@@ -1,100 +1,158 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local VIM = game:GetService("VirtualInputManager")
 local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
 
-local running = false
+-- LIMITS
+local POS_SOFT, POS_HARD = 4150, 4550
+local NEG_SOFT, NEG_HARD = -2156, -2450
 
--- Toggle with L
+local TAP_DELAY = 0.46
+local FLIP_COOLDOWN = 0.6
+local TOGGLE_KEY = Enum.KeyCode.U
+local dev = false
+
+-- state
+local enabled = false
+local targetZ = nil
+local flipping = false
+
+-- runtime refs
+local char = nil
+local root = nil
+local humanoid = nil
+
+-- debug throttle
+local lastPrint = 0
+local PRINT_INTERVAL = 0.25
+
+local function dprint(...)
+	if dev then
+		print("[Z-AUTO]", ...)
+	end
+end
+
+-- ================= CHARACTER BIND =================
+local function bindCharacter(character)
+	char = character
+	root = character:WaitForChild("HumanoidRootPart")
+	humanoid = character:WaitForChild("Humanoid")
+
+	targetZ = nil
+	flipping = false
+
+	dprint("Character bound")
+
+	humanoid.Died:Once(function()
+		dprint("Character died, waiting for respawn")
+	end)
+end
+
+-- initial bind
+if player.Character then
+	bindCharacter(player.Character)
+end
+
+player.CharacterAdded:Connect(bindCharacter)
+
+-- ================= TOGGLE =================
 UIS.InputBegan:Connect(function(input, gp)
 	if gp then return end
-	if input.KeyCode == Enum.KeyCode.L then
-		running = not running
-		warn("Running:", running)
+	if input.KeyCode == TOGGLE_KEY then
+		enabled = not enabled
+		targetZ = nil
+		flipping = false
+		print("SYSTEM", enabled and "ENABLED" or "DISABLED")
 	end
 end)
 
-local function PressRightBracket()
-	VIM:SendKeyEvent(true, Enum.KeyCode.RightBracket, false, game)
-	task.wait(0.05)
-	VIM:SendKeyEvent(false, Enum.KeyCode.RightBracket, false, game)
+-- ================= INPUT =================
+local function tap(key)
+	VIM:SendKeyEvent(true, key, false, game)
+	task.wait(TAP_DELAY)
+	VIM:SendKeyEvent(false, key, false, game)
 end
 
-local function PressSpace()
-	VIM:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-	task.wait(0.05)
-	VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+local function flip()
+	if flipping or not enabled or not root then return end
+	flipping = true
+
+	print("FLIP TRIGGERED")
+
+	tap(Enum.KeyCode.RightShift)
+	tap(Enum.KeyCode.Q)
+	tap(Enum.KeyCode.RightShift)
+
+	task.wait(FLIP_COOLDOWN)
+
+	targetZ = nil
+	flipping = false
 end
 
-local function SetYaw(deg)
-	local char = player.Character or player.CharacterAdded:Wait()
-	local root = char:WaitForChild("HumanoidRootPart")
-
-	local yaw = math.rad(deg)
-	local pos = root.Position
-	local rot = CFrame.Angles(0, yaw, 0)
-
-	root.CFrame = CFrame.new(pos) * rot
-
-	local camPos = camera.CFrame.Position
-	local offset = camPos - pos
-	camera.CFrame = CFrame.new(pos) * rot * CFrame.new(offset)
+-- ================= LOGIC =================
+local function getDirection()
+	if not root then return end
+	local vz = root.AssemblyLinearVelocity.Z
+	if vz > 0.5 then
+		return "POS", vz
+	elseif vz < -0.5 then
+		return "NEG", vz
+	end
+	return nil, vz
 end
 
-task.spawn(function()
-	while true do
-		-- Wait until enabled
-		while not running do
-			task.wait(0.1)
+local function pickTarget(dir)
+	local t
+	if dir == "POS" then
+		t = math.random(POS_SOFT * 100, POS_HARD * 100) / 100
+	else
+		t = math.random(NEG_HARD * 100, NEG_SOFT * 100) / 100
+	end
+	print("Target picked:", t)
+	return t
+end
+
+-- ================= HEARTBEAT =================
+RunService.Heartbeat:Connect(function()
+	if not enabled or flipping or not root or not root.Parent then return end
+
+	local dir, vz = getDirection()
+	if not dir then return end
+
+	local z = root.Position.Z
+	local now = os.clock()
+
+	if dev and now - lastPrint >= PRINT_INTERVAL then
+		lastPrint = now
+		dprint(
+			"Dir:", dir,
+			"Z:", math.floor(z),
+			"VZ:", string.format("%.2f", vz),
+			"Target:", targetZ
+		)
+	end
+
+	if dir == "POS" then
+		if z >= POS_SOFT and not targetZ then
+			dprint("POS soft crossed:", z)
+			targetZ = pickTarget("POS")
 		end
-
-		local char = player.Character or player.CharacterAdded:Wait()
-		local hum = char:WaitForChild("Humanoid")
-		local root = char:WaitForChild("HumanoidRootPart")
-
-		-- If dead, wait 3s
-		if hum.Health <= 0 then
-			task.wait(2)
-			continue
+		if targetZ and z >= targetZ then
+			dprint("POS target reached:", z)
+			flip()
 		end
-
-		PressRightBracket()
-		task.wait(0.5)
-		SetYaw(90)
-
-		-- Continuous movement
-		local moveConn
-		moveConn = RunService.RenderStepped:Connect(function()
-			if not running or hum.Health <= 0 then
-				moveConn:Disconnect()
-				return
-			end
-			hum:Move(Vector3.new(1, 0, 0), true)
-		end)
-
-		-- Jump with Space
-		task.wait(0.5)
-		for i = 1, 20 do
-			if not running or hum.Health <= 0 then break end
-			PressSpace()
-			task.wait(1.5)
+	else
+		if z <= NEG_SOFT and not targetZ then
+			dprint("NEG soft crossed:", z)
+			targetZ = pickTarget("NEG")
 		end
-
-		-- Wait until condition or stop
-		while running and hum.Health > 0 and root.Position.Z > -2500 do
-			task.wait(0.1)
-		end
-
-		if moveConn then moveConn:Disconnect() end
-		hum:Move(Vector3.zero, true)
-
-		if hum.Health <= 0 then
-			task.wait(3)
+		if targetZ and z <= targetZ then
+			dprint("NEG target reached:", z)
+			flip()
 		end
 	end
 end)
 
-print("Running Initialized")
+print("ZFlip Initialized (Respawn Safe)")
