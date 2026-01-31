@@ -155,4 +155,4 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
-print("ZFlip Initialized (Respawn Safe)")
+print("ZFlip Initialized")
