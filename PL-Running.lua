@@ -12,7 +12,7 @@ local NEG_SOFT, NEG_HARD = -2156, -2450
 local TAP_DELAY = 0.16
 local FLIP_COOLDOWN = 0.6
 local TOGGLE_KEY = Enum.KeyCode.U
-local dev = false
+local dev = true
 
 -- state
 local enabled = false
