@@ -85,7 +85,7 @@ local function playSound(id)
 	if not id then return end
 	local s = Instance.new("Sound")
 	s.SoundId = id
-	s.Volume = 2.4
+	s.Volume = 2.8
 	s.Parent = workspace
 	s:Play()
 	s.Ended:Once(function() s:Destroy() end)
@@ -186,4 +186,4 @@ task.spawn(function()
 end)
 
 scan()
-print("Neon Cache ESP ready")
+print("Caches Initialized")
