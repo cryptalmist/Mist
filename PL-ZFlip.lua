@@ -9,14 +9,14 @@ local root = char:WaitForChild("HumanoidRootPart")
 
 -- LIMITS
 local POS_SOFT, POS_HARD = 4150, 4550
-local NEG_SOFT, NEG_HARD = -2156, -2350
+local NEG_SOFT, NEG_HARD = -2156, -2450
 
 local TAP_DELAY = 0.06
 local FLIP_COOLDOWN = 0.6
 local TOGGLE_KEY = Enum.KeyCode.U
 local dev = false
 -- state
-local enabled = true
+local enabled = false
 local targetZ = nil
 local flipping = false
 
