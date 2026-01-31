@@ -97,4 +97,4 @@ task.spawn(function()
 	end
 end)
 
-print("Running initialized")
+print("Running Initialized")
