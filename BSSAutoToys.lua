@@ -11,7 +11,6 @@ getgenv().Toys = getgenv().Toys or {
     "Red Field Booster",
     "Wealth Clock",
     "Glue Dispenser",
-    "Glue Dispenser",
     "Sprout Summoner",
     "Honneystorm",
     "Free Royal Jelly Dispenser"
