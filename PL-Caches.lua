@@ -9,6 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local ESP_ENABLED = true
+local SCRIPT_ACTIVE = true
 local connections = {}
 local detectedParts = {}
 
@@ -25,6 +26,11 @@ local COLOR_PROFILES = {
 		name = "Legend",
 		color = Color3.fromRGB(255, 255, 100),
 		soundId = "rbxassetid://107261392908541",
+	},
+	{
+		name = "Cake",
+		color = Color3.fromRGB(163, 162, 165),
+		soundId = nil,
 	},
 }
 
@@ -44,6 +50,8 @@ local SPAWNS = {
 	{ name = "Eastside",  x = 2764,  z = 3106 },
 	{ name = "Lowrise",   x = 1860,  z = 4035 },
 }
+
+local CAKE_MIN_SIZE = 3 -- only show Cake ESP if part.Size.X is at least this
 
 -- ==================================================
 
@@ -92,18 +100,21 @@ local function playSound(id)
 end
 
 -- ---------- Detection ----------
+-- Color + Neon material only (no Shape/Ball check anymore)
 local function isNeonSphere(p)
 	if not p:IsA("BasePart") then return end
 	if p.Material ~= Enum.Material.Neon then return end
-	if p:IsA("Part") and p.Shape ~= Enum.PartType.Ball then return end
-	return getProfile(p.Color)
+	local profile = getProfile(p.Color)
+	if not profile then return end
+	if profile.name == "Cake" and p.Size.X < CAKE_MIN_SIZE then return end
+	return profile
 end
 
 -- ---------- ESP ----------
 local function createESP(part, profile)
 	local bill = Instance.new("BillboardGui")
 	bill.Name = "BallESP"
-	bill.Size = UDim2.new(0, 230, 0, 70)
+	bill.Size = UDim2.new(0, 250, 0, 80)
 	bill.AlwaysOnTop = true
 	bill.Adornee = part
 	bill.Parent = part
@@ -117,12 +128,21 @@ local function createESP(part, profile)
 	label.Font = Enum.Font.GothamBold
 	label.Parent = bill
 
+	local UPDATE_INTERVAL = 0.2 -- throttle label/size refresh (seconds)
+	local lastUpdate = 0
+
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
 		if not ESP_ENABLED or not part.Parent then
 			conn:Disconnect()
 			return
 		end
+
+		local now = os.clock()
+		if now - lastUpdate < UPDATE_INTERVAL then
+			return
+		end
+		lastUpdate = now
 
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -131,12 +151,32 @@ local function createESP(part, profile)
 		local dist = (hrp.Position - part.Position).Magnitude
 		local nearest = getNearestSpawnXZ(part.Position)
 
-		label.Text = string.format(
-			"%s\n%.1f m\n%s",
-			profile.name,
-			dist,
-			nearest
-		)
+		if not SCRIPT_ACTIVE then
+			conn:Disconnect()
+			return
+		end
+
+		-- Scale label size down as distance increases
+		local scale = math.clamp(1 - (dist / 400), 0.85, 1)
+		bill.Size = UDim2.new(0, 230 * scale, 0, 80 * scale)
+
+		if profile.name == "Cake" then
+			-- size is uniform on X/Y/Z, so just show one value
+			label.Text = string.format(
+				"%s\n%.1f m\n%s\nSize: %.2f",
+				profile.name,
+				dist,
+				nearest,
+				part.Size.X
+			)
+		else
+			label.Text = string.format(
+				"%s\n%.1f m\n%s",
+				profile.name,
+				dist,
+				nearest
+			)
+		end
 	end)
 
 	table.insert(connections, conn)
@@ -169,17 +209,49 @@ local function toggle()
 	end
 end
 
-UserInputService.InputBegan:Connect(function(i, gp)
-	if not gp and i.KeyCode == Enum.KeyCode.K then
+-- ---------- Kill switch ----------
+local inputConn
+
+local function killScript()
+	SCRIPT_ACTIVE = false
+	ESP_ENABLED = false
+
+	-- Disconnect everything tracked
+	for _, c in ipairs(connections) do
+		if c.Connected then c:Disconnect() end
+	end
+	table.clear(connections)
+
+	-- Destroy any remaining ESP guis
+	for _, v in ipairs(workspace:GetChildren()) do
+		local esp = v:FindFirstChild("BallESP")
+		if esp then esp:Destroy() end
+	end
+	table.clear(detectedParts)
+
+	-- Stop listening for the toggle key
+	if inputConn then
+		inputConn:Disconnect()
+		inputConn = nil
+	end
+
+	print("Script killed")
+end
+
+inputConn = UserInputService.InputBegan:Connect(function(i, gp)
+	if gp then return end
+	if i.KeyCode == Enum.KeyCode.K then
 		toggle()
+	elseif i.KeyCode == Enum.KeyCode.End then
+		killScript()
 	end
 end)
 
 -- Auto refresh
 task.spawn(function()
-	while true do
+	while SCRIPT_ACTIVE do
 		task.wait(1)
-		if ESP_ENABLED then
+		if ESP_ENABLED and SCRIPT_ACTIVE then
 			scan()
 		end
 	end
