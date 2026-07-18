@@ -274,7 +274,7 @@ inputConn = UserInputService.InputBegan:Connect(function(i, gp)
 	if gp then return end
 	if i.KeyCode == Enum.KeyCode.K then
 		toggle()
-	elseif i.KeyCode == Enum.KeyCode.Del then
+	elseif i.KeyCode == Enum.KeyCode.Delete then
 		killScript()
 	end
 end)
