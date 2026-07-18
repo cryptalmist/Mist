@@ -49,13 +49,13 @@ local CACHE_PROFILES = {
 local BAG_PROFILES = {
 	{
 		name = "Ultimate",
-		color = Color3.fromRGB(0, 0, 0),
+		color = Color3.fromRGB(255, 100, 0),
 		soundId = "rbxassetid://82845990304289",
 		volume = 3.5,
 	},
 	{
 		name = "Legend",
-		color = Color3.fromRGB(255, 244, 119),
+		color = Color3.fromRGB(255, 255, 0),
 		soundId = "rbxassetid://107261392908541",
 		volume = 3.0,
 	},
