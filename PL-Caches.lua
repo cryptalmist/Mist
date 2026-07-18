@@ -184,7 +184,7 @@ end
 
 -- ---------- Scan ----------
 local function scan()
-	for _, v in ipairs(workspace:GetChildren()) do
+	for _, v in ipairs(workspace.Map:GetChildren()) do
 		if not detectedParts[v] then
 			local profile = isNeonSphere(v)
 			if profile then
