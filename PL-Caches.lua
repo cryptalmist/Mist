@@ -12,11 +12,13 @@ local ESP_ENABLED = true
 local SCRIPT_ACTIVE = true
 local connections = {}
 local detectedParts = {}
+local activeESP = {} -- Map child (v) -> { conn = RenderStepped connection, gui = BillboardGui }
 
 -- ================= COLOR PROFILES =================
-local COLOR_TOLERANCE = 5
+-- Exact color matching only (no tolerance).
 
-local COLOR_PROFILES = {
+-- Caches (neon ball parts directly under workspace.Map)
+local CACHE_PROFILES = {
 	{
 		name = "Ultimate",
 		color = Color3.fromRGB(255, 100, 100),
@@ -33,19 +35,29 @@ local COLOR_PROFILES = {
 		name = "Epic",
 		color = Color3.fromRGB(100, 255, 255),
 		soundId = "rbxassetid://136655923047274",
-		volume = 2,
-	},
-	{
-		name = "Rare",
-		color = Color3.fromRGB(228, 100, 255),
-		soundId = "rbxassetid://136655923047274",
-		volume = 2,
+		volume = 2.5,
 	},
 	{
 		name = "Cake",
 		color = Color3.fromRGB(163, 162, 165),
 		soundId = nil,
 		volume = 0,
+	},
+}
+
+-- Bags (Model instances under workspace.Map, rarity read from their "Side" part color)
+local BAG_PROFILES = {
+	{
+		name = "Ultimate",
+		color = Color3.fromRGB(0, 0, 0),
+		soundId = "rbxassetid://82845990304289",
+		volume = 3.5,
+	},
+	{
+		name = "Legend",
+		color = Color3.fromRGB(255, 244, 119),
+		soundId = "rbxassetid://107261392908541",
+		volume = 3.0,
 	},
 }
 
@@ -67,7 +79,6 @@ local SPAWNS = {
 }
 
 local CAKE_MIN_SIZE = 3 -- only show Cake ESP if part.Size.X is at least this
-local UPDATE_INTERVAL = 0.2 -- throttle label/size refresh (seconds)
 
 -- ==================================================
 
@@ -95,14 +106,16 @@ local function getNearestSpawnXZ(pos)
 end
 
 -- ---------- Color utils ----------
+-- Exact match (rounded to nearest integer to avoid float rounding noise from
+-- Color3.fromRGB conversion). No tolerance window anymore.
 local function colorMatch(a, b)
-	return math.abs(a.R * 255 - b.R * 255) <= COLOR_TOLERANCE
-		and math.abs(a.G * 255 - b.G * 255) <= COLOR_TOLERANCE
-		and math.abs(a.B * 255 - b.B * 255) <= COLOR_TOLERANCE
+	local ar, ag, ab = math.floor(a.R * 255 + 0.5), math.floor(a.G * 255 + 0.5), math.floor(a.B * 255 + 0.5)
+	local br, bg, bb = math.floor(b.R * 255 + 0.5), math.floor(b.G * 255 + 0.5), math.floor(b.B * 255 + 0.5)
+	return ar == br and ag == bg and ab == bb
 end
 
-local function getProfile(color)
-	for _, p in ipairs(COLOR_PROFILES) do
+local function getProfile(color, profiles)
+	for _, p in ipairs(profiles) do
 		if colorMatch(color, p.color) then
 			return p
 		end
@@ -125,56 +138,58 @@ end
 local function isNeonSphere(p)
 	if not p:IsA("BasePart") then return end
 	if p.Material ~= Enum.Material.Neon then return end
-	local profile = getProfile(p.Color)
+	local profile = getProfile(p.Color, CACHE_PROFILES)
 	if not profile then return end
 	if profile.name == "Cake" and p.Size.X < CAKE_MIN_SIZE then return end
-	return profile
+	return profile, p
+end
+
+-- Bags: className Model, rarity read from the "Main" part's Color.
+local function isBagModel(v)
+	if v.ClassName ~= "Model" then return end
+	local main = v:FindFirstChild("Main")
+	if not main or not main:IsA("BasePart") then return end
+	local profile = getProfile(main.Color, BAG_PROFILES)
+	if not profile then return end
+	return profile, main
 end
 
 -- ---------- ESP ----------
-local function createESP(part, profile)
+-- `anchor` is the BasePart used for position/adornee/color (the ball itself,
+-- or a bag's "Main" part). `mapChild` is the direct workspace.Map child that
+-- was actually detected (needed so removal can be looked up on ChildRemoved).
+local function createESP(anchor, profile, mapChild)
 	local bill = Instance.new("BillboardGui")
 	bill.Name = "BallESP"
 	bill.Size = UDim2.new(0, 250, 0, 80)
 	bill.AlwaysOnTop = true
-	bill.Adornee = part
-	bill.Parent = part
+	bill.Adornee = anchor
+	bill.Parent = anchor
 
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
-	label.TextColor3 = part.Color
+	label.TextColor3 = anchor.Color
 	label.TextStrokeTransparency = 0
 	label.TextScaled = true
 	label.Font = Enum.Font.GothamBold
 	label.Parent = bill
 
-	local lastUpdate = 0
-
+	-- No time-based throttle anymore: existence/cleanup is driven entirely by
+	-- workspace.Map's ChildRemoved event (see mapRemovedConn below), not by
+	-- polling here. This loop only keeps the label's live distance/position updated.
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
-		if not ESP_ENABLED or not part.Parent then
-			conn:Disconnect()
+		if not ESP_ENABLED then
 			return
 		end
-
-		local now = os.clock()
-		if now - lastUpdate < UPDATE_INTERVAL then
-			return
-		end
-		lastUpdate = now
 
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		if not hrp then return end
 
-		local dist = (hrp.Position - part.Position).Magnitude
-		local nearest = getNearestSpawnXZ(part.Position)
-
-		if not SCRIPT_ACTIVE then
-			conn:Disconnect()
-			return
-		end
+		local dist = (hrp.Position - anchor.Position).Magnitude
+		local nearest = getNearestSpawnXZ(anchor.Position)
 
 		-- Scale label size down as distance increases
 		local scale = math.clamp(1 - (dist / 400), 0.85, 1)
@@ -187,7 +202,7 @@ local function createESP(part, profile)
 				profile.name,
 				dist,
 				nearest,
-				part.Size.X
+				anchor.Size.X
 			)
 		else
 			label.Text = string.format(
@@ -200,22 +215,26 @@ local function createESP(part, profile)
 	end)
 
 	table.insert(connections, conn)
+	activeESP[mapChild] = { conn = conn, gui = bill }
 end
 
 -- ---------- Detection handler (single part) ----------
 local function handlePart(v)
 	if detectedParts[v] then return end
 
-	local profile = isNeonSphere(v)
+	local profile, anchor = isNeonSphere(v)
+	if not profile then
+		profile, anchor = isBagModel(v)
+	end
 	if not profile then return end
 
 	detectedParts[v] = true
-	createESP(v, profile)
+	createESP(anchor, profile, v)
 	playSound(profile.soundId, profile.volume)
 
 	log("Detected %s | pos=(%.1f, %.1f, %.1f) | nearest=%s",
-		profile.name, v.Position.X, v.Position.Y, v.Position.Z,
-		getNearestSpawnXZ(v.Position))
+		profile.name, anchor.Position.X, anchor.Position.Y, anchor.Position.Z,
+		getNearestSpawnXZ(anchor.Position))
 end
 
 -- ---------- Initial scan (existing children only) ----------
@@ -226,17 +245,30 @@ local function initialScan()
 	log("Initial scan complete: %d children checked", #workspace.Map:GetChildren())
 end
 
+-- ---------- Cleanup helper ----------
+local function cleanupTrackedPart(v)
+	local entry = activeESP[v]
+	if entry then
+		if entry.conn and entry.conn.Connected then
+			entry.conn:Disconnect()
+		end
+		if entry.gui then
+			entry.gui:Destroy()
+		end
+		activeESP[v] = nil
+	end
+	detectedParts[v] = nil
+end
+
 -- ---------- Toggle ----------
 local function toggle()
 	ESP_ENABLED = not ESP_ENABLED
 	log("ESP %s", ESP_ENABLED and "ENABLED" or "DISABLED")
 
 	if not ESP_ENABLED then
-		for _, v in ipairs(workspace:GetChildren()) do
-			local esp = v:FindFirstChild("BallESP")
-			if esp then esp:Destroy() end
+		for v in pairs(activeESP) do
+			cleanupTrackedPart(v)
 		end
-		table.clear(detectedParts)
 	end
 end
 
@@ -254,12 +286,9 @@ local function killScript()
 	end
 	table.clear(connections)
 
-	-- Destroy any remaining ESP guis
-	for _, v in ipairs(workspace:GetChildren()) do
-		local esp = v:FindFirstChild("BallESP")
-		if esp then esp:Destroy() end
+	for v in pairs(activeESP) do
+		cleanupTrackedPart(v)
 	end
-	table.clear(detectedParts)
 
 	-- Stop listening for the toggle key
 	if inputConn then
@@ -281,7 +310,8 @@ end)
 
 -- ---------- Event-based scanning ----------
 -- Only react to direct children of workspace.Map being added/removed,
--- not changes within those children's own descendants.
+-- not changes within those children's own descendants. This is also now the
+-- ONLY mechanism used to detect removal/cleanup (no per-frame existence poll).
 local mapAddedConn = workspace.Map.ChildAdded:Connect(function(v)
 	if not SCRIPT_ACTIVE or not ESP_ENABLED then return end
 	handlePart(v)
@@ -290,8 +320,8 @@ table.insert(connections, mapAddedConn)
 
 local mapRemovedConn = workspace.Map.ChildRemoved:Connect(function(v)
 	if detectedParts[v] then
-		detectedParts[v] = nil
 		log("Removed from tracking: %s", v.Name)
+		cleanupTrackedPart(v)
 	end
 end)
 table.insert(connections, mapRemovedConn)
