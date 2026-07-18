@@ -21,16 +21,31 @@ local COLOR_PROFILES = {
 		name = "Ultimate",
 		color = Color3.fromRGB(255, 100, 100),
 		soundId = "rbxassetid://82845990304289",
+		volume = 3.5,
 	},
 	{
 		name = "Legend",
 		color = Color3.fromRGB(255, 255, 100),
 		soundId = "rbxassetid://107261392908541",
+		volume = 3.0,
+	},
+	{
+		name = "Epic",
+		color = Color3.fromRGB(100, 255, 255),
+		soundId = "rbxassetid://136655923047274",
+		volume = 2,
+	},
+	{
+		name = "Rare",
+		color = Color3.fromRGB(228, 100, 255),
+		soundId = "rbxassetid://136655923047274",
+		volume = 2,
 	},
 	{
 		name = "Cake",
 		color = Color3.fromRGB(163, 162, 165),
 		soundId = nil,
+		volume = 0,
 	},
 }
 
@@ -52,8 +67,14 @@ local SPAWNS = {
 }
 
 local CAKE_MIN_SIZE = 3 -- only show Cake ESP if part.Size.X is at least this
+local UPDATE_INTERVAL = 0.2 -- throttle label/size refresh (seconds)
 
 -- ==================================================
+
+-- ---------- Logging ----------
+local function log(fmt, ...)
+	print(string.format("[ESP] " .. fmt, ...))
+end
 
 -- ---------- Spawn utils ----------
 local function getNearestSpawnXZ(pos)
@@ -89,11 +110,11 @@ local function getProfile(color)
 end
 
 -- ---------- Sound ----------
-local function playSound(id)
+local function playSound(id, volume)
 	if not id then return end
 	local s = Instance.new("Sound")
 	s.SoundId = id
-	s.Volume = 2.8
+	s.Volume = volume or 2.8
 	s.Parent = workspace
 	s:Play()
 	s.Ended:Once(function() s:Destroy() end)
@@ -128,7 +149,6 @@ local function createESP(part, profile)
 	label.Font = Enum.Font.GothamBold
 	label.Parent = bill
 
-	local UPDATE_INTERVAL = 0.2 -- throttle label/size refresh (seconds)
 	local lastUpdate = 0
 
 	local conn
@@ -182,23 +202,34 @@ local function createESP(part, profile)
 	table.insert(connections, conn)
 end
 
--- ---------- Scan ----------
-local function scan()
+-- ---------- Detection handler (single part) ----------
+local function handlePart(v)
+	if detectedParts[v] then return end
+
+	local profile = isNeonSphere(v)
+	if not profile then return end
+
+	detectedParts[v] = true
+	createESP(v, profile)
+	playSound(profile.soundId, profile.volume)
+
+	log("Detected %s | pos=(%.1f, %.1f, %.1f) | nearest=%s",
+		profile.name, v.Position.X, v.Position.Y, v.Position.Z,
+		getNearestSpawnXZ(v.Position))
+end
+
+-- ---------- Initial scan (existing children only) ----------
+local function initialScan()
 	for _, v in ipairs(workspace.Map:GetChildren()) do
-		if not detectedParts[v] then
-			local profile = isNeonSphere(v)
-			if profile then
-				detectedParts[v] = true
-				createESP(v, profile)
-				playSound(profile.soundId)
-			end
-		end
+		handlePart(v)
 	end
+	log("Initial scan complete: %d children checked", #workspace.Map:GetChildren())
 end
 
 -- ---------- Toggle ----------
 local function toggle()
 	ESP_ENABLED = not ESP_ENABLED
+	log("ESP %s", ESP_ENABLED and "ENABLED" or "DISABLED")
 
 	if not ESP_ENABLED then
 		for _, v in ipairs(workspace:GetChildren()) do
@@ -215,6 +246,7 @@ local inputConn
 local function killScript()
 	SCRIPT_ACTIVE = false
 	ESP_ENABLED = false
+	log("Kill switch triggered, shutting down")
 
 	-- Disconnect everything tracked
 	for _, c in ipairs(connections) do
@@ -235,27 +267,34 @@ local function killScript()
 		inputConn = nil
 	end
 
-	print("Script killed")
+	log("Script killed")
 end
 
 inputConn = UserInputService.InputBegan:Connect(function(i, gp)
 	if gp then return end
 	if i.KeyCode == Enum.KeyCode.K then
 		toggle()
-	elseif i.KeyCode == Enum.KeyCode.End then
+	elseif i.KeyCode == Enum.KeyCode.Del then
 		killScript()
 	end
 end)
 
--- Auto refresh
-task.spawn(function()
-	while SCRIPT_ACTIVE do
-		task.wait(1)
-		if ESP_ENABLED and SCRIPT_ACTIVE then
-			scan()
-		end
+-- ---------- Event-based scanning ----------
+-- Only react to direct children of workspace.Map being added/removed,
+-- not changes within those children's own descendants.
+local mapAddedConn = workspace.Map.ChildAdded:Connect(function(v)
+	if not SCRIPT_ACTIVE or not ESP_ENABLED then return end
+	handlePart(v)
+end)
+table.insert(connections, mapAddedConn)
+
+local mapRemovedConn = workspace.Map.ChildRemoved:Connect(function(v)
+	if detectedParts[v] then
+		detectedParts[v] = nil
+		log("Removed from tracking: %s", v.Name)
 	end
 end)
+table.insert(connections, mapRemovedConn)
 
-scan()
-print("Caches Initialized")
+log("Script started")
+initialScan()
